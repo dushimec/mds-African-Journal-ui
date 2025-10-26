@@ -137,7 +137,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                   </div>
 
                   <div className="flex justify-between items-center text-sm">
-                    <a href="#" className="text-blue-600 hover:underline">
+                    <a href="/forgot-password" className="text-blue-600 hover:underline">
                       Forgot password?
                     </a>
                   </div>

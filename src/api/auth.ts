@@ -92,3 +92,12 @@ export const resendCode = async (email: string): Promise<ResendCodeResponse> => 
   });
   return res.data;
 };
+
+
+export const forgotPassword = async (email: string): Promise<ResendCodeResponse> => {
+  const res = await axios.post<ResendCodeResponse>(`${API}/auth/forgot-password`, {
+    email,
+  });
+  return res.data;
+};
+

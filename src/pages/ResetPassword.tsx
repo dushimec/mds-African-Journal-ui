@@ -17,7 +17,8 @@ const ResetPassword = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Get token from query string
+  const isAdmin = location.pathname.startsWith("/admin");
+
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const t = params.get("token");
@@ -33,7 +34,7 @@ const ResetPassword = () => {
     try {
       await axios.post(`${API_URL}/auth/reset-password?token=${token}`, { password });
       toast.success("✅ Password reset successful!");
-      navigate("/login");
+      navigate(isAdmin ? "/admin" : "/login");
     } catch (err: any) {
       toast.error(err.response?.data?.message || "❌ Failed to reset password");
     } finally {
@@ -52,7 +53,7 @@ const ResetPassword = () => {
         <Card className="border border-gray-200 rounded-3xl overflow-hidden shadow-lg">
           <CardHeader className="text-center space-y-2 bg-primary text-white py-8">
             <CardTitle className="text-3xl font-extrabold tracking-tight">
-              Reset Password
+              {isAdmin ? "Admin Reset Password" : "Reset Password"}
             </CardTitle>
             <p className="text-blue-100 text-base">
               Enter your new password below

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mail, Loader2, ArrowLeft } from "lucide-react";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -14,6 +14,10 @@ const ForgotPassword = () => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // detect if it's admin route
+  const isAdmin = location.pathname.startsWith("/admin");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +26,7 @@ const ForgotPassword = () => {
     try {
       await axios.post(`${API_URL}/auth/forgot-password`, { email });
       toast.success("✅ Password reset link sent! Check your email.");
-      navigate("/login");
+      navigate(isAdmin ? "/admin" : "/login");
     } catch (error: any) {
       toast.error(error.response?.data?.message || "❌ Failed to send reset email");
     } finally {
@@ -41,7 +45,7 @@ const ForgotPassword = () => {
         <Card className="border border-gray-200 rounded-3xl overflow-hidden shadow-lg">
           <CardHeader className="text-center space-y-2 bg-primary text-white py-8">
             <CardTitle className="text-3xl font-extrabold tracking-tight">
-              Forgot Password
+              {isAdmin ? "Admin Forgot Password" : "Forgot Password"}
             </CardTitle>
             <p className="text-blue-100 text-base">
               Enter your email to receive a reset link
@@ -80,7 +84,7 @@ const ForgotPassword = () => {
             <div className="mt-8 text-center">
               <Button
                 variant="ghost"
-                onClick={() => navigate("/login")}
+                onClick={() => navigate(isAdmin ? "/admin" : "/login")}
                 className="text-blue-600 hover:text-blue-800"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" /> Back to Login

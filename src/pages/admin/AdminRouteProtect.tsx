@@ -9,16 +9,17 @@ interface ProtectedRouteProps {
 const AdminRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const token = localStorage.getItem("access_token");
 
-  if (!token) return <Navigate to="/login" replace />;
+  if (!token) return <Navigate to="/admin" replace />;
 
   try {
     const decoded = jwtDecode<{ role: string }>(token);
     if (decoded.role !== "ADMIN") {
-      return <Navigate to="/unauthorized" replace />; 
+      return <Navigate to="/unauthorized" replace />;
     }
   } catch (err) {
-    console.error("Invalid token", err);
-    return <Navigate to="/login" replace />;
+    console.error("Invalid or expired token", err);
+    localStorage.removeItem("access_token");
+    return <Navigate to="/admin" replace />;
   }
 
   return <>{children}</>;

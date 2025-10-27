@@ -12,15 +12,13 @@ import Archive from "./pages/Archive";
 import Submission from "./pages/Submission";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
+
+// Admin pages
 import DashboardLayout from "./pages/admin/DashboardLayout";
 import DashboardHome from "./pages/admin/DashboardHome";
 import SubmissionsPage from "./pages/admin/SubmissionsPage";
 import UsersPage from "./pages/admin/UsersPage";
-
 import ArchivePage from "./pages/admin/ArchivePage";
-import Verify2FA from "./pages/Verify2FA";
-import Auth from "./pages/Login";
-import VerifyEmail from "./pages/VerifyEmail";
 import FaqManager from "./pages/admin/FaqForm";
 import ContactMessages from "./pages/admin/ContactMessages";
 import EditorialMemberForm from "./pages/admin/UploadEditorialMember";
@@ -28,14 +26,26 @@ import AboutSectionManager from "./pages/admin/AboutPageSectionUI";
 import NewsletterDashboard from "./pages/admin/NewsletterDashboard";
 import TopicDashboard from "./pages/admin/TopicDashboard";
 import IssueManager from "./pages/admin/IssueManager";
-import AdminRoute from "./pages/admin/AdminRouteProtect";
 import ContactInfoManager from "./pages/admin/ContactInfoManager";
+import AdminRoute from "./pages/admin/AdminRouteProtect";
+
+// Auth pages
+import Auth from "./pages/Login";
+import Verify2FA from "./pages/Verify2FA";
+import VerifyEmail from "./pages/VerifyEmail";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 
+// New admin login page
+import AdminLogin from "./pages/admin/AdminLogin"; // ✅ Create this for admin auth
+
 const App = () => {
   const location = useLocation();
-  const hideLayout = location.pathname.includes("dashboard");
+
+  // ✅ Hide Navigation & Footer for admin dashboard or login routes
+  const hideLayout =
+    location.pathname.startsWith("/dashboard") ||
+    location.pathname.startsWith("/admin");
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -43,7 +53,7 @@ const App = () => {
 
       <main className="flex-1">
         <Routes>
-          {/* Dashboard routes */}
+          {/* ✅ Admin routes (protected) */}
           <Route
             path="/dashboard"
             element={
@@ -55,7 +65,6 @@ const App = () => {
             <Route index element={<DashboardHome />} />
             <Route path="submissions" element={<SubmissionsPage />} />
             <Route path="users" element={<UsersPage />} />
-
             <Route path="archive" element={<ArchivePage />} />
             <Route path="upload-member" element={<EditorialMemberForm />} />
             <Route path="add-faq" element={<FaqManager />} />
@@ -67,8 +76,13 @@ const App = () => {
             <Route path="contact-info" element={<ContactInfoManager />} />
           </Route>
 
-          {/* Public routes */}
+          {/* ✅ Admin auth routes */}
+          <Route path="/admin" element={<AdminLogin />} />
+          <Route path="/admin/verify-2fa" element={<Verify2FA />} />
+          <Route path="/admin/forgot-password" element={<ForgotPassword />} />
+          <Route path="/admin/reset-password" element={<ResetPassword />} />
 
+          {/* ✅ Public routes */}
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
           <Route path="/journal" element={<Journal />} />
@@ -77,22 +91,25 @@ const App = () => {
           <Route path="/archive" element={<Archive />} />
           <Route path="/submission" element={<Submission />} />
           <Route path="/contact" element={<Contact />} />
+
+          {/* User auth */}
           <Route path="/login" element={<Auth />} />
-          <Route path="/verify-2fa" element={<Verify2FA />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
 
-          {/* Catch-all */}
+          {/* Misc */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
 
       {!hideLayout && <Footer />}
+
+      {/* ✅ Toast Notifications */}
       <ToastContainer
         position="top-right"
         autoClose={2000}
-        hideProgressBar={false} // show progress bar
+        hideProgressBar={false}
         closeOnClick
         pauseOnHover
         draggable
@@ -105,4 +122,5 @@ const App = () => {
     </div>
   );
 };
+
 export default App;

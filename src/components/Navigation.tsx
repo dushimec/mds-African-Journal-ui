@@ -3,13 +3,17 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Menu, X, Mail, Phone, Search } from "lucide-react";
-import {toast} from "react-toastify"
+import { toast } from "react-toastify";
 import axios from "axios";
 
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [contactInfo, setContactInfo] = useState<{ phone?: string; email?: string }>({});
+  const [logoUrl, setLogoUrl] = useState<string>("/logo.png");
+  const [journalTitle, setJournalTitle] = useState<string>(
+    "MDS African Journal of Applied Economics and Development (MAJAED)"
+  );
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -25,34 +29,31 @@ const Navigation = () => {
     { name: "Contact", path: "/contact" },
   ];
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path: string) => location.pathname === path;
 
-  //Check login status when token changes or when navigating
+  //Check login status
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     setIsLoggedIn(!!token);
-  }, [location]); 
+  }, [location]);
 
-  //Also listen for token changes across tabs
   useEffect(() => {
     const handleStorageChange = () => {
       const token = localStorage.getItem("access_token");
       setIsLoggedIn(!!token);
     };
-
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
-  //Handle logout
   const handleLogout = () => {
     localStorage.removeItem("access_token");
     setIsLoggedIn(false);
-    toast.success("logout successfully")
+    toast.success("Logout successfully");
     navigate("/login");
   };
 
-  // ✅ Fetch contact info from API
+  // Fetch contact info
   useEffect(() => {
     const fetchContactInfo = async () => {
       try {
@@ -70,20 +71,20 @@ const Navigation = () => {
     fetchContactInfo();
   }, []);
 
-  // ✅ Check login status on location change
+  // ✅ Fetch logo and journal title
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    setIsLoggedIn(!!token);
-  }, [location]);
-
-  // ✅ Listen for token changes across tabs
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const token = localStorage.getItem("access_token");
-      setIsLoggedIn(!!token);
+    const fetchLogoAndTitle = async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/logo`);
+        if (res.data?.data) {
+          setLogoUrl(res.data.data.logoUrl || "/logo.png");
+          setJournalTitle(res.data.data.name || journalTitle);
+        }
+      } catch (error) {
+        console.error("❌ Failed to fetch logo/title:", error);
+      }
     };
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+    fetchLogoAndTitle();
   }, []);
 
   return (
@@ -115,24 +116,17 @@ const Navigation = () => {
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2 font-bold text-xl text-primary">
             <div className="h-24 w-24">
-              <img src="/logo.png" alt="Logo" className="rounded-full object-cover" />
+              <img src={logoUrl} alt="Logo" className="rounded-full object-cover" />
             </div>
-            <span className="font-heading text-base">
-              MDS African Journal of Applied Economics and Development (MAJAED)
-            </span>
+            <span className="font-heading text-base">{journalTitle}</span>
           </Link>
 
           <div className="hidden md:flex items-center space-x-3">
             <div className="relative">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Search..."
-                className="pl-8 w-48 md:w-64"
-              />
+              <Input type="text" placeholder="Search..." className="pl-8 w-48 md:w-64" />
             </div>
 
-            {/* ✅ Conditional Login/Logout */}
             {isLoggedIn ? (
               <Button variant="default" onClick={handleLogout}>
                 Logout
@@ -197,11 +191,7 @@ const Navigation = () => {
                 <div className="mt-4 space-y-2">
                   <Input type="text" placeholder="Search..." />
                   {isLoggedIn ? (
-                    <Button
-                      className="w-full"
-                      variant="destructive"
-                      onClick={handleLogout}
-                    >
+                    <Button className="w-full" variant="destructive" onClick={handleLogout}>
                       Logout
                     </Button>
                   ) : (

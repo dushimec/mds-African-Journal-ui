@@ -29,6 +29,7 @@ import IssueManager from "./pages/admin/IssueManager";
 import ContactInfoManager from "./pages/admin/ContactInfoManager";
 import AdminRoute from "./pages/admin/AdminRouteProtect";
 
+
 // Auth pages
 import Auth from "./pages/Login";
 import Verify2FA from "./pages/Verify2FA";
@@ -38,6 +39,7 @@ import ResetPassword from "./pages/ResetPassword";
 
 // New admin login page
 import AdminLogin from "./pages/admin/AdminLogin"; // ✅ Create this for admin auth
+import LogoManager from "./pages/admin/LogoManager";
 
 const App = () => {
   const location = useLocation();
@@ -74,6 +76,7 @@ const App = () => {
             <Route path="add-topic" element={<TopicDashboard />} />
             <Route path="issues" element={<IssueManager />} />
             <Route path="contact-info" element={<ContactInfoManager />} />
+            <Route path="manage-logo"  element={<LogoManager/>}   />
           </Route>
 
           {/* ✅ Admin auth routes */}

@@ -3,7 +3,7 @@ import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Swal from "sweetalert2";
-import { Pencil, Trash2, ChevronDown, ChevronUp, Check } from "lucide-react";
+import { Trash2, ChevronDown, ChevronUp, Check, X, Eye } from "lucide-react";
 
 interface EditorialMember {
   id: string;
@@ -13,7 +13,6 @@ interface EditorialMember {
   qualifications: string;
   affiliation: string;
   bio: string;
-  order?: number;
   isActive: boolean;
   profileImage?: string;
 }
@@ -21,6 +20,7 @@ interface EditorialMember {
 const EditorialBoard: React.FC = () => {
   const [members, setMembers] = useState<EditorialMember[]>([]);
   const [showAll, setShowAll] = useState(false);
+  const [viewMember, setViewMember] = useState<EditorialMember | null>(null);
 
   const token = localStorage.getItem("access_token");
   const API_URL = `${import.meta.env.VITE_API_URL}/editorial-board-member`;
@@ -31,11 +31,8 @@ const EditorialBoard: React.FC = () => {
 
   const fetchMembers = async () => {
     try {
-      const res = await axios.get(API_URL, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = Array.isArray(res.data.data) ? res.data.data : [res.data.data];
-      setMembers(data);
+      const res = await axios.get(API_URL, { headers: { Authorization: `Bearer ${token}` } });
+      setMembers(Array.isArray(res.data.data) ? res.data.data : [res.data.data]);
     } catch (err) {
       console.error(err);
       toast.error("Failed to fetch members");
@@ -55,11 +52,10 @@ const EditorialBoard: React.FC = () => {
 
     if (result.isConfirmed) {
       try {
-        await axios.delete(`${API_URL}/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await axios.delete(`${API_URL}/${id}`, { headers: { Authorization: `Bearer ${token}` } });
         toast.success("Member deleted!");
-        setMembers(prev => prev.filter(m => m.id !== id));
+        setMembers((prev) => prev.filter((m) => m.id !== id));
+        setViewMember(null);
       } catch (err) {
         console.error(err);
         toast.error("Failed to delete member");
@@ -69,11 +65,7 @@ const EditorialBoard: React.FC = () => {
 
   const handleApprove = async (id: string) => {
     try {
-      await axios.put(
-        `${API_URL}/${id}`,
-        { isActive: true },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await axios.put(`${API_URL}/${id}`, { isActive: true }, { headers: { Authorization: `Bearer ${token}` } });
       toast.success("Member approved!");
       fetchMembers();
     } catch (err) {
@@ -88,9 +80,9 @@ const EditorialBoard: React.FC = () => {
     <div className="max-w-5xl mx-auto p-6">
       <ToastContainer position="top-right" autoClose={3000} />
 
-      {/* Members Table */}
       <div className="bg-white p-6 rounded-xl shadow">
         <h2 className="text-xl font-semibold mb-4">Editorial Board Members</h2>
+
         {members.length === 0 ? (
           <p>No members found</p>
         ) : (
@@ -106,16 +98,10 @@ const EditorialBoard: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {displayedMembers.map(member => (
+                {displayedMembers.map((member) => (
                   <tr key={member.id} className="border-t">
                     <td className="p-2 flex items-center gap-2">
-                      {member.profileImage && (
-                        <img
-                          src={member.profileImage}
-                          alt={member.fullName}
-                          className="w-8 h-8 rounded-full object-cover"
-                        />
-                      )}
+                      {member.profileImage && <img src={member.profileImage} alt={member.fullName} className="w-8 h-8 rounded-full object-cover" />}
                       {member.fullName}
                     </td>
                     <td className="p-2">{member.role}</td>
@@ -123,21 +109,15 @@ const EditorialBoard: React.FC = () => {
                     <td className="p-2">{member.isActive ? "Active" : "Pending"}</td>
                     <td className="p-2 flex gap-2">
                       {!member.isActive && (
-                        <button
-                          onClick={() => handleApprove(member.id)}
-                          className="text-green-600 hover:text-green-800 flex items-center gap-1"
-                        >
+                        <button onClick={() => handleApprove(member.id)} className="text-green-600 hover:text-green-800 flex items-center gap-1">
                           <Check size={16} /> Approve
                         </button>
                       )}
-                      <button className="text-blue-600 hover:text-blue-800">
-                        <Pencil size={18} />
+                      <button onClick={() => setViewMember(member)} className="text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                        <Eye size={16} /> View
                       </button>
-                      <button
-                        onClick={() => handleDelete(member.id)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        <Trash2 size={18} />
+                      <button onClick={() => handleDelete(member.id)} className="text-red-600 hover:text-red-800">
+                        <Trash2 size={16} />
                       </button>
                     </td>
                   </tr>
@@ -148,22 +128,37 @@ const EditorialBoard: React.FC = () => {
         )}
 
         {members.length > 3 && (
-          <button
-            onClick={() => setShowAll(prev => !prev)}
-            className="mt-4 flex items-center gap-1 text-blue-600 hover:text-blue-800"
-          >
-            {showAll ? (
-              <>
-                Show Less <ChevronUp size={18} />
-              </>
-            ) : (
-              <>
-                Show More <ChevronDown size={18} />
-              </>
-            )}
+          <button onClick={() => setShowAll((prev) => !prev)} className="mt-4 flex items-center gap-1 text-blue-600 hover:text-blue-800">
+            {showAll ? <>Show Less <ChevronUp size={18} /></> : <>Show More <ChevronDown size={18} /></>}
           </button>
         )}
       </div>
+
+      {/* View Modal */}
+      {viewMember && (
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded-lg w-[450px]">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-lg font-semibold">{viewMember.fullName}</h3>
+              <button onClick={() => setViewMember(null)} className="text-gray-600 hover:text-red-600"><X /></button>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              {viewMember.profileImage && <img src={viewMember.profileImage} className="w-32 h-32 object-cover rounded mb-2" />}
+              <p><strong>Role:</strong> {viewMember.role}</p>
+              <p><strong>Email:</strong> {viewMember.email}</p>
+              <p><strong>Qualifications:</strong> {viewMember.qualifications}</p>
+              <p><strong>Affiliation:</strong> {viewMember.affiliation}</p>
+              <p><strong>Bio:</strong> {viewMember.bio}</p>
+              <p><strong>Status:</strong> {viewMember.isActive ? "Active" : "Pending"}</p>
+            </div>
+
+            <div className="flex justify-end gap-2 mt-4">
+              <button onClick={() => setViewMember(null)} className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -16,7 +16,10 @@ import {
   BadgeInfo,
   Rss,
   Plus,
+  Settings 
 } from "lucide-react";
+
+
 
 interface SidebarProps {
   isOpen: boolean;
@@ -99,6 +102,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggle }) => {
       name: "Contact Info",
       path: "/dashboard/contact-info",
       icon: <Plus size={18} />,
+    },
+     {
+      name: "Settings",
+      path: "/dashboard/manage-logo",
+      icon: <Settings size={18} />,
     },
   ];
 

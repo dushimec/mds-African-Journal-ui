@@ -159,6 +159,7 @@ const handleDelete = async (id: string) => {
     currentPage * ITEMS_PER_PAGE
   );
 
+  console.log(paginated)
   const nextPage = () => setCurrentPage((p) => Math.min(p + 1, totalPages));
   const prevPage = () => setCurrentPage((p) => Math.max(p - 1, 1));
 
@@ -196,7 +197,7 @@ const handleDelete = async (id: string) => {
                 <td className="p-3">{s.status}</td>
                 <td className="p-3">{s.authors.map((a) => a.fullName).join(", ")}</td>
                 <td className="p-3">
-                  {s.user.firstName} {s.user.lastName}
+                  {s.user?.firstName} {s.user?.lastName}
                 </td>
                 <td className="p-3">{new Date(s.createdAt).toLocaleDateString()}</td>
                 <td className="p-3 flex items-center justify-center gap-3">

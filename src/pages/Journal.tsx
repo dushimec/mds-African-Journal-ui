@@ -20,7 +20,7 @@ import {
   Eye,
   Loader2,
 } from "lucide-react";
-import {toast} from 'react-toastify';
+import { toast } from "react-toastify";
 
 const Journal = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -39,13 +39,19 @@ const Journal = () => {
         const res = await axios.get(
           "https://mds-journal-backend.vercel.app/api/v1/submission"
         );
-        setArticles(res.data.data || []);
+        // Filter only SUBMITTED articles
+        const submittedArticles = (res.data.data || []).filter(
+          (article: any) => article.status === "SUBMITTED"
+        );
+        setArticles(submittedArticles);
       } catch (error) {
         console.error("Error fetching articles:", error);
+        toast.error("Failed to fetch submissions.");
       } finally {
         setLoading(false);
       }
     };
+
     fetchArticles();
   }, []);
 
@@ -133,7 +139,10 @@ const Journal = () => {
               />
             </div>
             <div className="flex gap-2">
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <Select
+                value={selectedCategory}
+                onValueChange={setSelectedCategory}
+              >
                 <SelectTrigger className="w-48">
                   <Filter className="mr-2 h-4 w-4" />
                   <SelectValue placeholder="Category" />
@@ -249,13 +258,15 @@ const Journal = () => {
 
                   <div className="flex flex-wrap gap-2 mt-4">
                     {article.keywords &&
-                      article.keywords
-                        .split(",")
-                        .map((keyword, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            {keyword.trim()}
-                          </Badge>
-                        ))}
+                      article.keywords.split(",").map((keyword, index) => (
+                        <Badge
+                          key={index}
+                          variant="outline"
+                          className="text-xs"
+                        >
+                          {keyword.trim()}
+                        </Badge>
+                      ))}
                   </div>
 
                   <div className="flex flex-col sm:flex-row gap-3 mt-4">
@@ -274,9 +285,13 @@ const Journal = () => {
                       onClick={() => {
                         if (article.files && article.files.length > 0) {
                           const manuscriptFile =
-                            article.files.find((f: any) => f.fileType === "MANUSCRIPT") ||
-                            article.files[0];
-                          handleDownload(manuscriptFile.id, manuscriptFile.fileName);
+                            article.files.find(
+                              (f: any) => f.fileType === "MANUSCRIPT"
+                            ) || article.files[0];
+                          handleDownload(
+                            manuscriptFile.id,
+                            manuscriptFile.fileName
+                          );
                         } else {
                           toast.error("No file available for download.");
                         }
@@ -287,7 +302,9 @@ const Journal = () => {
                       ) : (
                         <Download className="mr-2 h-4 w-4" />
                       )}
-                      {downloadingId === article.id ? "Downloading..." : "Download PDF"}
+                      {downloadingId === article.id
+                        ? "Downloading..."
+                        : "Download PDF"}
                     </Button>
                   </div>
                 </CardContent>

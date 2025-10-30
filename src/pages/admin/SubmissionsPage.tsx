@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Eye, EyeOff, Edit3, Trash2, X } from "lucide-react";
-import { Toast } from "@radix-ui/react-toast";
-import { toast } from "sonner";
-import Swal from 'sweetalert2';
+import { toast } from "react-toastify";
+import Swal from "sweetalert2";
 
 interface Author {
   id: string;
@@ -41,18 +40,27 @@ interface Stats {
 
 const ITEMS_PER_PAGE = 5;
 
+// Allowed status enums
+const STATUS_ENUMS = [
+  "DRAFT",
+  "SUBMITTED",
+  "UNDER_REVIEW",
+  "REVISION_REQUESTED",
+  "ACCEPTED",
+  "REJECTED",
+  "PUBLISHED",
+];
+
 const SubmissionsPage: React.FC = () => {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [editing, setEditing] = useState<Submission | null>(null);
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState<Stats>({});
-  const [statusOptions, setStatusOptions] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
 
   const token = localStorage.getItem("access_token");
 
-  // Fetch submissions
   const fetchSubmissions = async () => {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/submission/`, {
@@ -65,17 +73,16 @@ const SubmissionsPage: React.FC = () => {
     }
   };
 
-  // Fetch stats
   const fetchStats = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/submission/stats`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/submission/stats`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       const json = await res.json();
-      if (json.success && json.data) {
-        setStats(json.data);
-        setStatusOptions(Object.keys(json.data));
-      }
+      if (json.success && json.data) setStats(json.data);
     } catch (err) {
       console.error("Error fetching stats:", err);
     }
@@ -94,14 +101,18 @@ const SubmissionsPage: React.FC = () => {
     if (!editing) return;
     setLoading(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/submission/${editing.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status: editing.status }),
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/submission/${editing.id}/status`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ status: editing.status }), 
+        
+        }
+      );
       const data = await res.json();
       if (data.success) {
         toast.success("Status updated successfully!");
@@ -109,57 +120,59 @@ const SubmissionsPage: React.FC = () => {
         fetchSubmissions();
         fetchStats();
       } else {
-        toast.error("Failed to update status.")
+        toast.error("Failed to update status.");
       }
     } catch (err) {
       console.error("Error updating submission:", err);
+      toast.error("Something went wrong.");
     } finally {
       setLoading(false);
     }
   };
 
- 
-const handleDelete = async (id: string) => {
-  const result = await Swal.fire({
-    title: "Are you sure?",
-    text: "This action cannot be undone!",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonColor: "#d33",
-    cancelButtonColor: "#3085d6",
-    confirmButtonText: "Yes, delete it!",
-    cancelButtonText: "Cancel",
-  });
+  const handleDelete = async (id: string) => {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "This action cannot be undone!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+    });
 
-  if (result.isConfirmed) {
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/submission/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
+    if (result.isConfirmed) {
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/submission/${id}`,
+          {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        const data = await res.json();
 
-      if (data.success) {
-        toast.success(" Submission deleted!");
-        setSubmissions(submissions.filter((s) => s.id !== id));
-        fetchStats();
-      } else {
-        toast.error(" Failed to delete submission.");
+        if (data.success) {
+          toast.success("Submission deleted!");
+          setSubmissions(submissions.filter((s) => s.id !== id));
+          fetchStats();
+        } else {
+          toast.error("Failed to delete submission.");
+        }
+      } catch (err) {
+        console.error("Error deleting submission:", err);
+        toast.error("Something went wrong.");
       }
-    } catch (err) {
-      console.error("Error deleting submission:", err);
-      toast.error(" Something went wrong.");
     }
-  }
-};
-  // Pagination logic
+  };
+
   const totalPages = Math.ceil(submissions.length / ITEMS_PER_PAGE);
   const paginated = submissions.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
 
-  console.log(paginated)
   const nextPage = () => setCurrentPage((p) => Math.min(p + 1, totalPages));
   const prevPage = () => setCurrentPage((p) => Math.max(p - 1, 1));
 
@@ -167,17 +180,18 @@ const handleDelete = async (id: string) => {
     <div className="p-6">
       <h1 className="text-2xl font-semibold mb-4">Submissions Dashboard</h1>
 
-      {/* Status cards */}
       <div className="flex gap-4 mb-6 flex-wrap">
         {Object.keys(stats).map((status) => (
-          <div key={status} className="bg-gray-100 p-4 rounded shadow w-32 text-center">
+          <div
+            key={status}
+            className="bg-gray-100 p-4 rounded shadow w-32 text-center"
+          >
             <div className="text-sm font-medium">{status}</div>
             <div className="text-xl font-bold">{stats[status]}</div>
           </div>
         ))}
       </div>
 
-      {/* Submissions table */}
       <table className="min-w-full border-collapse bg-white rounded-lg shadow-md text-sm">
         <thead>
           <tr className="bg-gray-100 text-left">
@@ -195,19 +209,36 @@ const handleDelete = async (id: string) => {
               <tr className="border-b hover:bg-gray-50">
                 <td className="p-3 font-medium">{s.manuscriptTitle}</td>
                 <td className="p-3">{s.status}</td>
-                <td className="p-3">{s.authors.map((a) => a.fullName).join(", ")}</td>
+                <td className="p-3">
+                  {s.authors.map((a) => a.fullName).join(", ")}
+                </td>
                 <td className="p-3">
                   {s.user?.firstName} {s.user?.lastName}
                 </td>
-                <td className="p-3">{new Date(s.createdAt).toLocaleDateString()}</td>
+                <td className="p-3">
+                  {new Date(s.createdAt).toLocaleDateString()}
+                </td>
                 <td className="p-3 flex items-center justify-center gap-3">
-                  <button onClick={() => toggleExpand(s.id)} className="text-blue-600">
-                    {expanded === s.id ? <EyeOff size={18} /> : <Eye size={18} />}
+                  <button
+                    onClick={() => toggleExpand(s.id)}
+                    className="text-blue-600"
+                  >
+                    {expanded === s.id ? (
+                      <EyeOff size={18} />
+                    ) : (
+                      <Eye size={18} />
+                    )}
                   </button>
-                  <button onClick={() => setEditing(s)} className="text-yellow-600">
+                  <button
+                    onClick={() => setEditing(s)}
+                    className="text-yellow-600"
+                  >
                     <Edit3 size={18} />
                   </button>
-                  <button onClick={() => handleDelete(s.id)} className="text-red-600">
+                  <button
+                    onClick={() => handleDelete(s.id)}
+                    className="text-red-600"
+                  >
                     <Trash2 size={18} />
                   </button>
                 </td>
@@ -257,7 +288,6 @@ const handleDelete = async (id: string) => {
         <p className="text-center text-gray-500 mt-4">No submissions found.</p>
       )}
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-center items-center gap-4 mt-4">
           <button
@@ -301,7 +331,7 @@ const handleDelete = async (id: string) => {
                 }
                 className="w-full border px-3 py-2 rounded"
               >
-                {statusOptions.map((s) => (
+                {STATUS_ENUMS.map((s) => (
                   <option key={s} value={s}>
                     {s}
                   </option>

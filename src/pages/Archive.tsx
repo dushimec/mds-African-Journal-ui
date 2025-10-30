@@ -319,7 +319,7 @@ const Archive = () => {
           <p className="text-xl text-muted-foreground mb-6 max-w-2xl mx-auto">
             Subscribe to get alerts about new issues, research, and journal updates.
           </p>
-          <Link to="/submission">
+          <Link to="/contact">
           <Button size="lg" className="font-semibold">
             Subscribe to Alerts
           </Button>

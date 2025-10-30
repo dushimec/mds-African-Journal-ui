@@ -406,7 +406,9 @@ const Contact: React.FC = () => {
                           <MapPin className="h-6 w-6 text-primary" />
                         </div>
                         <div>
-                          <h3 className="font-semibold mb-2">Mailing Address</h3>
+                          <h3 className="font-semibold mb-2">
+                            Mailing Address
+                          </h3>
                           <p className="text-muted-foreground text-sm mb-1">
                             {contactInfo.mailingAddress}
                           </p>
@@ -500,17 +502,27 @@ const Contact: React.FC = () => {
                   Our Location
                 </CardTitle>
               </CardHeader>
+
               <CardContent>
-                <div className="bg-muted rounded-lg h-48 flex items-center justify-center mb-4">
-                  <div className="text-center text-muted-foreground">
-                    <MapPin className="h-12 w-12 mx-auto mb-2" />
-                    <p>Interactive Map</p>
-                    <p className="text-sm">123 Academic Plaza, Research City</p>
-                  </div>
+                {/* Google Maps Embed */}
+                <div className="rounded-lg overflow-hidden mb-4">
+                  <iframe
+                    title="Our Location"
+                    src="https://www.google.com/maps?q=KN+12+St,+Kigali,+Rwanda&output=embed"
+                    width="100%"
+                    height="250"
+                    style={{ border: 0 }}
+                    loading="lazy"
+                    allowFullScreen
+                  ></iframe>
                 </div>
-                <p className="text-muted-foreground text-sm">
-                  {contactInfo?.locationDescription}
-                </p>
+
+                <div className="text-center text-muted-foreground">
+                  <p className="font-medium">KN 12 St, Kigali, Rwanda</p>
+                  <p className="text-sm text-muted-foreground">
+                    {contactInfo?.locationDescription}
+                  </p>
+                </div>
               </CardContent>
             </Card>
 

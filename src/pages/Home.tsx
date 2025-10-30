@@ -3,56 +3,71 @@ import { Link } from "react-router-dom";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpen, Users, Globe, ArrowRight, Download, Loader2 } from "lucide-react";
+import {
+  BookOpen,
+  Users,
+  Globe,
+  ArrowRight,
+  Download,
+  Loader2,
+} from "lucide-react";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { toast } from "react-toastify";
 
 const Home = () => {
-  const [featuredArticles, setFeaturedArticles] = useState([]);
+  const [featuredArticles, setFeaturedArticles] = useState<any[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [totalArticles, setTotalArticles] = useState(0);
   const [totalSubscribers, setTotalSubscribers] = useState(0);
 
-
   const toggleExpand = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
   };
- const fetchTotals = async () => {
-  try {
-    // 1️⃣ Fetch all articles/submissions
-    const articlesRes = await axios.get(
-      "https://mds-journal-backend.vercel.app/api/v1/submission"
-    );
-    const articlesData = articlesRes.data.data || [];
-    setTotalArticles(articlesData.length); // ✅ count all articles
 
-    // 3️⃣ Fetch newsletter subscribers
-    const subsRes = await axios.get(
-      "https://mds-journal-backend.vercel.app/api/v1/newsletter/subscribers"
-    );
-    const subsData = subsRes.data.data.subscribers || [];
-    setTotalSubscribers(subsData.length); // ✅ count subscribers
-
-  } catch (error) {
-
-    console.error("Error fetching totals:", error);
-  } finally {
-  }
-};
+  // ✅ Fetch articles (only published)
   const fetchArticles = async () => {
     try {
       setLoading(true);
-      const api = "https://mds-journal-backend.vercel.app/api/v1/home-page";
-      const response = await axios.get(api);
-      setFeaturedArticles(response.data.data.recentSubmissions || []);
+      const res = await axios.get(
+        "https://mds-journal-backend.vercel.app/api/v1/submission"
+      );
+
+      // Only keep articles that are published
+      const publishedArticles = (res.data.data || []).filter(
+        (article: any) => article.status === "PUBLISHED"
+      );
+
+      setFeaturedArticles(publishedArticles);
     } catch (error) {
       console.error("Error fetching articles:", error);
+      toast.error("Failed to fetch submissions.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ✅ Fetch total stats (articles + subscribers)
+  const fetchTotals = async () => {
+    try {
+      const articlesRes = await axios.get(
+        "https://mds-journal-backend.vercel.app/api/v1/submission"
+      );
+      const articlesData = (articlesRes.data.data || []).filter(
+        (a: any) => a.status === "PUBLISHED"
+      );
+      setTotalArticles(articlesData.length);
+
+      const subsRes = await axios.get(
+        "https://mds-journal-backend.vercel.app/api/v1/newsletter/subscribers"
+      );
+      const subsData = subsRes.data.data.subscribers || [];
+      setTotalSubscribers(subsData.length);
+    } catch (error) {
+      console.error("Error fetching totals:", error);
     }
   };
 
@@ -84,8 +99,8 @@ const Home = () => {
   }, []);
 
   const stats = [
-    { icon: BookOpen, label: "Published Articles", value:totalArticles},
-    { icon: Users, label: "Active Subscribers", value:totalSubscribers },
+    { icon: BookOpen, label: "Published Articles", value: totalArticles },
+    { icon: Users, label: "Active Subscribers", value: totalSubscribers },
     { icon: Globe, label: "Countries", value: "68" },
   ];
 
@@ -170,7 +185,7 @@ const Home = () => {
             </p>
           </div>
 
-          {/* ✅ Skeleton Loading */}
+          {/* Articles Section */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
             {loading
               ? Array.from({ length: 3 }).map((_, i) => (
@@ -253,9 +268,13 @@ const Home = () => {
                         onClick={() => {
                           if (article.files && article.files.length > 0) {
                             const manuscriptFile =
-                              article.files.find((f: any) => f.fileType === "MANUSCRIPT") ||
-                              article.files[0];
-                            handleDownload(manuscriptFile.id, manuscriptFile.fileName);
+                              article.files.find(
+                                (f: any) => f.fileType === "MANUSCRIPT"
+                              ) || article.files[0];
+                            handleDownload(
+                              manuscriptFile.id,
+                              manuscriptFile.fileName
+                            );
                           } else {
                             toast.error("No file available for download.");
                           }
@@ -266,7 +285,9 @@ const Home = () => {
                         ) : (
                           <Download className="mr-2 h-4 w-4" />
                         )}
-                        {downloadingId === article.id ? "Downloading..." : "Download PDF"}
+                        {downloadingId === article.id
+                          ? "Downloading..."
+                          : "Download PDF"}
                       </Button>
                     </div>
                   </Card>
@@ -284,7 +305,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Call to Action */}
+      {/* CTA Section */}
       <section className="py-16 bg-gradient-card">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">

@@ -41,7 +41,7 @@ const Journal = () => {
         );
         // Filter only SUBMITTED articles
         const submittedArticles = (res.data.data || []).filter(
-          (article: any) => article.status === "SUBMITTED"
+          (article: any) => article.status === "PUBLISHED"
         );
         setArticles(submittedArticles);
       } catch (error) {

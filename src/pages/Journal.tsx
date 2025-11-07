@@ -22,6 +22,9 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 
+// ✅ Base URL from Vite environment variable
+const BACKEND_URL = import.meta.env.VITE_API_URL;
+
 const Journal = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -36,10 +39,7 @@ const Journal = () => {
     const fetchArticles = async () => {
       try {
         setLoading(true);
-        const res = await axios.get(
-          "https://mds-journal-backend.vercel.app/api/v1/submission"
-        );
-        // Filter only SUBMITTED articles
+        const res = await axios.get(`${BACKEND_URL}/submission`);
         const submittedArticles = (res.data.data || []).filter(
           (article: any) => article.status === "PUBLISHED"
         );
@@ -59,9 +59,7 @@ const Journal = () => {
   useEffect(() => {
     const fetchTopics = async () => {
       try {
-        const res = await axios.get(
-          "https://mds-journal-backend.vercel.app/api/v1/topic"
-        );
+        const res = await axios.get(`${BACKEND_URL}/topic`);
         setCategories(res.data.data.map((topic) => topic.name));
       } catch (error) {
         console.error("Error fetching topics:", error);
@@ -74,7 +72,7 @@ const Journal = () => {
     try {
       setDownloadingId(fileId);
       const response = await axios.get(
-        `https://mds-journal-backend.vercel.app/api/v1/submission/download/${fileId}`,
+        `${BACKEND_URL}/submission/download/${fileId}`,
         { responseType: "blob" }
       );
 
@@ -119,7 +117,6 @@ const Journal = () => {
   return (
     <div className="min-h-screen py-12">
       <div className="container mx-auto px-4">
-        {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-3xl font-bold font-heading mb-6">
             Current Topics
@@ -160,7 +157,7 @@ const Journal = () => {
           </div>
         </div>
 
-        {/* ✅ Skeleton Loader */}
+        {/* Content and Loader */}
         {loading ? (
           <div className="space-y-8">
             {Array.from({ length: 5 }).map((_, i) => (

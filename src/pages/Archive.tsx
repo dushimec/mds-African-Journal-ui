@@ -36,7 +36,7 @@ const Archive = () => {
   const fetchIssues = async () => {
     try {
       const res = await axios.get(
-        "https://mds-journal-backend.vercel.app/api/v1/issues/"
+        "${import.meta.env.VITE_API_URL}/issues/"
       );
       setIssues(res.data.data || []);
     } catch (error) {
@@ -50,7 +50,7 @@ const Archive = () => {
   const fetchTopics = async () => {
     try {
       const res = await axios.get(
-        "https://mds-journal-backend.vercel.app/api/v1/topic"
+        "${import.meta.env.VITE_API_URL}/topic"
       );
       setTopics(res.data.data || []);
     } catch (error) {
@@ -65,21 +65,21 @@ const Archive = () => {
   try {
     // 1️⃣ Fetch all articles/submissions
     const articlesRes = await axios.get(
-      "https://mds-journal-backend.vercel.app/api/v1/submission"
+      "${import.meta.env.VITE_API_URL}/submission"
     );
     const articlesData = articlesRes.data.data || [];
     setTotalArticles(articlesData.length); // ✅ count all articles
 
     // 2️⃣ Fetch all issues
     const issuesRes = await axios.get(
-      "https://mds-journal-backend.vercel.app/api/v1/issues/"
+      `${import.meta.env.VITE_API_URL}/issues/`
     );
     const issuesData = issuesRes.data.data || [];
     setTotalIssues(issuesData.length); // ✅ count all issues
 
     // 3️⃣ Fetch newsletter subscribers
     const subsRes = await axios.get(
-      "https://mds-journal-backend.vercel.app/api/v1/newsletter/subscribers"
+      `${import.meta.env.VITE_API_URL}/newsletter/subscribers`  
     );
     const subsData = subsRes.data.data.subscribers || [];
     setTotalSubscribers(subsData.length); // ✅ count subscribers

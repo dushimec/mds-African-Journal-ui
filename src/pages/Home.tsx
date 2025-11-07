@@ -24,19 +24,18 @@ const Home = () => {
   const [totalArticles, setTotalArticles] = useState(0);
   const [totalSubscribers, setTotalSubscribers] = useState(0);
 
+  const backendUrl = import.meta.env.VITE_API_URL;
+
   const toggleExpand = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
   };
 
-  // ✅ Fetch articles (only published)
+
   const fetchArticles = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(
-        "https://mds-journal-backend.vercel.app/api/v1/submission"
-      );
+      const res = await axios.get(`${backendUrl}/submission`);
 
-      // Only keep articles that are published
       const publishedArticles = (res.data.data || []).filter(
         (article: any) => article.status === "PUBLISHED"
       );
@@ -50,19 +49,16 @@ const Home = () => {
     }
   };
 
-  // ✅ Fetch total stats (articles + subscribers)
   const fetchTotals = async () => {
     try {
-      const articlesRes = await axios.get(
-        "https://mds-journal-backend.vercel.app/api/v1/submission"
-      );
+      const articlesRes = await axios.get(`${backendUrl}/submission`);
       const articlesData = (articlesRes.data.data || []).filter(
         (a: any) => a.status === "PUBLISHED"
       );
       setTotalArticles(articlesData.length);
 
       const subsRes = await axios.get(
-        "https://mds-journal-backend.vercel.app/api/v1/newsletter/subscribers"
+        `${backendUrl}/newsletter/subscribers`
       );
       const subsData = subsRes.data.data.subscribers || [];
       setTotalSubscribers(subsData.length);
@@ -75,7 +71,7 @@ const Home = () => {
     try {
       setDownloadingId(fileId);
       const response = await axios.get(
-        `https://mds-journal-backend.vercel.app/api/v1/submission/download/${fileId}`,
+        `${backendUrl}/submission/download/${fileId}`,
         { responseType: "blob" }
       );
       const url = window.URL.createObjectURL(new Blob([response.data]));

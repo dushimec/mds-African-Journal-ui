@@ -33,7 +33,7 @@ const Submission = () => {
   useEffect(() => {
     const fetchTopics = async () => {
       try {
-        const res = await fetch("https://mds-journal-backend.vercel.app/api/v1/topic");
+        const res = await fetch(`${API_URL}/topic`);
         const data = await res.json();
         setTopics(data.data?.map((t: any) => t.name) || []);
       } catch (err) {

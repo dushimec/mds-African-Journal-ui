@@ -25,6 +25,7 @@ const AboutSectionEnum = [
   "POLICY_IMPACT",
   "ENGAGEMENT_WITH_PRACTITIONERS",
   "JOIN_OUR_COMMUNITY",
+  "CUSTOMIZ_SECTION",
 ];
 
 const AboutSectionManager: React.FC = () => {

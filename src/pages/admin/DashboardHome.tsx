@@ -8,10 +8,22 @@ import {
   MessageCircle,
   UserCheck,
   Users,
+  Megaphone,
 } from "lucide-react";
 
+interface Stats {
+  submissions: number;
+  subscribers: number;
+  topics: number;
+  issues: number;
+  messages: number;
+  editorialMembers: number;
+  users: number;
+  announcements: number;
+}
+
 const DashboardHome: React.FC = () => {
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<Stats>({
     submissions: 0,
     subscribers: 0,
     topics: 0,
@@ -19,7 +31,10 @@ const DashboardHome: React.FC = () => {
     messages: 0,
     editorialMembers: 0,
     users: 0,
+    announcements: 0,
   });
+
+  const [announcementList, setAnnouncementList] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -35,6 +50,7 @@ const DashboardHome: React.FC = () => {
           messagesRes,
           editorialMembersRes,
           usersRes,
+          announcementsRes,
         ] = await Promise.all([
           axios.get(`${import.meta.env.VITE_API_URL}/submission`, { headers }),
           axios.get(`${import.meta.env.VITE_API_URL}/newsletter/subscribers`, { headers }),
@@ -43,6 +59,7 @@ const DashboardHome: React.FC = () => {
           axios.get(`${import.meta.env.VITE_API_URL}/contact-messages`, { headers }),
           axios.get(`${import.meta.env.VITE_API_URL}/editorial-board-member`, { headers }),
           axios.get(`${import.meta.env.VITE_API_URL}/users`, { headers }),
+          axios.get(`${import.meta.env.VITE_API_URL}/announcements`, { headers }),
         ]);
 
         setStats({
@@ -59,7 +76,14 @@ const DashboardHome: React.FC = () => {
             ? editorialMembersRes.data.data.length
             : 0,
           users: Array.isArray(usersRes.data.data) ? usersRes.data.data.length : 0,
+          announcements: Array.isArray(announcementsRes.data.data?.announcements)
+            ? announcementsRes.data.data.announcements.length
+            : 0,
         });
+
+        if (Array.isArray(announcementsRes.data.data?.announcements)) {
+          setAnnouncementList(announcementsRes.data.data.announcements);
+        }
       } catch (error) {
         console.error("Failed to fetch dashboard stats", error);
       }
@@ -76,11 +100,14 @@ const DashboardHome: React.FC = () => {
     { title: "Issues", icon: Layers, value: stats.issues, color: "bg-indigo-500" },
     { title: "Messages", icon: MessageCircle, value: stats.messages, color: "bg-red-500" },
     { title: "Editorial Members", icon: UserCheck, value: stats.editorialMembers, color: "bg-orange-500" },
+    { title: "Announcements", icon: Megaphone, value: stats.announcements, color: "bg-teal-500" },
   ];
 
   return (
     <div className="p-6">
       <h1 className="text-3xl font-bold mb-6">Dashboard Overview</h1>
+
+      {/* Stat Cards */}
       <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {cards.map((card, index) => (
           <div
@@ -97,6 +124,24 @@ const DashboardHome: React.FC = () => {
           </div>
         ))}
       </div>
+
+      {/* Announcement List */}
+      {announcementList.length > 0 && (
+        <div className="mt-10">
+          <h2 className="text-2xl font-bold mb-4">Latest Announcements</h2>
+          <ul className="space-y-4">
+            {announcementList.map((announcement) => (
+              <li key={announcement.id} className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition">
+                <h3 className="font-semibold text-lg">{announcement.title}</h3>
+                <p className="text-muted-foreground text-sm">{announcement.description}</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {new Date(announcement.date).toLocaleDateString()}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 };

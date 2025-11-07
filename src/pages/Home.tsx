@@ -10,6 +10,10 @@ import {
   ArrowRight,
   Download,
   Loader2,
+  Megaphone,
+  Award,
+  TrendingUp,
+  Newspaper,
 } from "lucide-react";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
@@ -21,8 +25,18 @@ const Home = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
-  const [totalArticles, setTotalArticles] = useState(0);
   const [totalSubscribers, setTotalSubscribers] = useState(0);
+
+  const [editorInChief, setEditorInChief] = useState<any>(null);
+  const [associateEditors, setAssociateEditors] = useState<any[]>([]);
+
+  const [journalMetrics, setJournalMetrics] = useState({
+    acceptanceRate: "0%",
+    rejectionRate: "0%",
+    totalSubmissions: 0,
+  });
+
+  const [announcements, setAnnouncements] = useState<any[]>([]);
 
   const backendUrl = import.meta.env.VITE_API_URL;
 
@@ -30,17 +44,26 @@ const Home = () => {
     setExpandedId(expandedId === id ? null : id);
   };
 
-
+  // Fetch articles & compute metrics
   const fetchArticles = async () => {
     try {
       setLoading(true);
       const res = await axios.get(`${backendUrl}/submission`);
-
-      const publishedArticles = (res.data.data || []).filter(
+      const allArticles = res.data.data || [];
+      const publishedArticles = allArticles.filter(
         (article: any) => article.status === "PUBLISHED"
       );
-
       setFeaturedArticles(publishedArticles);
+
+      const total = allArticles.length;
+      const accepted = publishedArticles.length;
+      const rejected = allArticles.filter(a => a.status === "REJECTED").length;
+
+      setJournalMetrics({
+        acceptanceRate: total ? ((accepted / total) * 100).toFixed(1) + "%" : "0%",
+        rejectionRate: total ? ((rejected / total) * 100).toFixed(1) + "%" : "0%",
+        totalSubmissions: total,
+      });
     } catch (error) {
       console.error("Error fetching articles:", error);
       toast.error("Failed to fetch submissions.");
@@ -49,17 +72,10 @@ const Home = () => {
     }
   };
 
+  // Fetch subscribers
   const fetchTotals = async () => {
     try {
-      const articlesRes = await axios.get(`${backendUrl}/submission`);
-      const articlesData = (articlesRes.data.data || []).filter(
-        (a: any) => a.status === "PUBLISHED"
-      );
-      setTotalArticles(articlesData.length);
-
-      const subsRes = await axios.get(
-        `${backendUrl}/newsletter/subscribers`
-      );
+      const subsRes = await axios.get(`${backendUrl}/newsletter/subscribers`);
       const subsData = subsRes.data.data.subscribers || [];
       setTotalSubscribers(subsData.length);
     } catch (error) {
@@ -67,6 +83,43 @@ const Home = () => {
     }
   };
 
+
+  // Fetch editorial board
+  const fetchEditors = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${backendUrl}/editorial-board-member`);
+      const data = await res.json();
+
+      if (data.success) {
+        const members = data.data.filter((m: any) => m.isActive);
+        const chief = members.find((m: any) =>
+          m.role?.toLowerCase().includes("managing")
+        );
+        const others = members.filter((m: any) => m !== chief);
+
+        setEditorInChief(chief);
+        setAssociateEditors(others);
+      }
+    } catch (error) {
+      console.error("Failed to load board members", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch dynamic announcements
+  const fetchAnnouncements = async () => {
+    try {
+      const res = await axios.get(`${backendUrl}/announcements`);
+      setAnnouncements(res.data.data.announcements || []);
+    } catch (error) {
+      console.error("Failed to fetch announcements", error);
+      toast.error("Failed to fetch announcements.");
+    }
+  };
+
+  // Handle file download
   const handleDownload = async (fileId: string, fileName: string) => {
     try {
       setDownloadingId(fileId);
@@ -92,10 +145,12 @@ const Home = () => {
   useEffect(() => {
     fetchArticles();
     fetchTotals();
+    fetchEditors();
+    fetchAnnouncements();
   }, []);
 
   const stats = [
-    { icon: BookOpen, label: "Published Articles", value: totalArticles },
+    { icon: BookOpen, label: "Published Articles", value: journalMetrics.totalSubmissions },
     { icon: Users, label: "Active Subscribers", value: totalSubscribers },
     { icon: Globe, label: "Countries", value: "68" },
   ];
@@ -181,7 +236,6 @@ const Home = () => {
             </p>
           </div>
 
-          {/* Articles Section */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
             {loading
               ? Array.from({ length: 3 }).map((_, i) => (
@@ -301,28 +355,134 @@ const Home = () => {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-16 bg-gradient-card">
+
+        {/* Call for Papers */}
+      <section className="py-16 bg-secondary/30">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Ready to Share Your Research?
-          </h2>
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Join our community of researchers and contribute to the advancement
-            of scientific knowledge.
+          <Megaphone className="h-10 w-10 text-primary mx-auto mb-4" />
+          <h2 className="text-3xl font-bold mb-4">Call for Papers</h2>
+          <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
+            Submit your latest research to our upcoming issue focusing on
+            <strong> “Innovation and Sustainable Development in Africa”</strong>.
+            Papers are welcome until <strong>March 30, 2026</strong>.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/submission">
-              <Button size="lg" className="font-semibold">
-                Submit Article
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-            <Link to="/author-page">
-              <Button variant="outline" size="lg">
-                Author Guidelines
-              </Button>
-            </Link>
+          <Link to="/submission">
+            <Button size="lg">Submit Now</Button>
+          </Link>
+        </div>
+      </section>
+
+      {/* Journal Metrics Section */}
+      <section className="py-16 bg-secondary">
+        <div className="container mx-auto px-4 text-center">
+          <TrendingUp className="h-10 w-10 text-primary mx-auto mb-4" />
+          <h2 className="text-3xl font-bold mb-8">Journal Metrics</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <Card className="shadow-sm p-6">
+              <CardTitle>Acceptance Rate</CardTitle>
+              <CardContent className="text-2xl font-bold">{journalMetrics.acceptanceRate}</CardContent>
+            </Card>
+            <Card className="shadow-sm p-6">
+              <CardTitle>Rejection Rate</CardTitle>
+              <CardContent className="text-2xl font-bold">{journalMetrics.rejectionRate}</CardContent>
+            </Card>
+            <Card className="shadow-sm p-6">
+              <CardTitle>Total Submissions</CardTitle>
+              <CardContent className="text-2xl font-bold">{journalMetrics.totalSubmissions}</CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Editorial Board Highlight */}
+     <section className="py-16">
+        <div className="container mx-auto px-4 text-center">
+          <Award className="h-10 w-10 text-primary mx-auto mb-4" />
+          <h2 className="text-3xl font-bold mb-8">Editorial Board Highlight</h2>
+
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 animate-pulse">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Card key={i} className="h-full">
+                  <div className="h-56 w-full bg-gray-200 rounded-t-2xl"></div>
+                  <CardContent className="pt-4">
+                    <div className="h-5 w-2/3 bg-gray-200 rounded mb-2"></div>
+                    <div className="h-4 w-1/2 bg-gray-200 rounded"></div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <>
+              {editorInChief && (
+                <div className="max-w-md mx-auto mb-12">
+                  <Card className="shadow-md">
+                    <img
+                      src={editorInChief.profileImage || "/default-editor.jpg"}
+                      alt={editorInChief.fullName}
+                      className="h-64 w-full object-cover rounded-t-2xl"
+                    />
+                    <CardContent className="pt-4">
+                      <h3 className="text-xl font-semibold">{editorInChief.fullName}</h3>
+                      <p className="text-muted-foreground">
+                        {editorInChief.role || "Managing Editor"}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {associateEditors.map((editor: any, index: number) => (
+                  <Card key={index} className="shadow-md">
+                    <img
+                      src={editor.profileImage || "/default-editor.jpg"}
+                      alt={editor.fullName}
+                      className="h-56 w-full object-cover rounded-t-2xl"
+                    />
+                    <CardContent className="pt-4">
+                      <h3 className="text-xl font-semibold">{editor.fullName}</h3>
+                      <p className="text-muted-foreground">{editor.role}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </section>
+
+      {/* Announcements & News */}
+      <section className="py-16">
+        <div className="container mx-auto px-4 text-center">
+          <Newspaper className="h-10 w-10 text-primary mx-auto mb-4" />
+          <h2 className="text-3xl font-bold mb-8">Announcements & News</h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {loading
+              ? Array.from({ length: 3 }).map((_, i) => (
+                  <Card key={i} className="shadow-sm animate-pulse">
+                    <CardHeader>
+                      <div className="h-6 w-3/4 bg-gray-300 rounded mb-2"></div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-4 w-full bg-gray-300 rounded mb-2"></div>
+                      <div className="h-4 w-5/6 bg-gray-300 rounded"></div>
+                    </CardContent>
+                  </Card>
+                ))
+              : announcements.map((news, index) => (
+                  <Card key={index} className="shadow-sm">
+                    <CardHeader>
+                      <CardTitle className="text-lg">{news.title}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground mb-2">{news.description}</p>
+                      <p className="text-sm text-primary font-medium">
+                        {new Date(news.date).toLocaleDateString()}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
           </div>
         </div>
       </section>

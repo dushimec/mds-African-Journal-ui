@@ -28,6 +28,7 @@ import TopicDashboard from "./pages/admin/TopicDashboard";
 import IssueManager from "./pages/admin/IssueManager";
 import ContactInfoManager from "./pages/admin/ContactInfoManager";
 import AdminRoute from "./pages/admin/AdminRouteProtect";
+import Announcements from "./pages/admin/Announcements";
 
 
 // Auth pages
@@ -77,6 +78,7 @@ const App = () => {
             <Route path="issues" element={<IssueManager />} />
             <Route path="contact-info" element={<ContactInfoManager />} />
             <Route path="manage-logo"  element={<LogoManager/>}   />
+            <Route path="announcements" element={<Announcements/>}/>
           </Route>
 
           {/* ✅ Admin auth routes */}

@@ -90,7 +90,6 @@ const EditorialBoard = () => {
   useEffect(() => {
     fetchEditors();
   }, []);
-  console.log(editorInChief)
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>

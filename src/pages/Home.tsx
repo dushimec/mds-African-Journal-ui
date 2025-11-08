@@ -26,7 +26,7 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [totalSubscribers, setTotalSubscribers] = useState(0);
-
+  const [totalIssues, setTotalIssues] = useState(0);
   const [editorInChief, setEditorInChief] = useState<any>(null);
   const [associateEditors, setAssociateEditors] = useState<any[]>([]);
 
@@ -43,6 +43,16 @@ const Home = () => {
   const toggleExpand = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
   };
+
+  const fetchIssuesCount = async () => {
+  try {
+    const issuesRes = await axios.get(`${backendUrl}/issues/`);
+    const issuesData = issuesRes.data.data || [];
+    setTotalIssues(issuesData.length); // ✅ count all issues
+  } catch (error) {
+    console.error("Failed to fetch issues count", error);
+  }
+};
 
   // Fetch articles & compute metrics
   const fetchArticles = async () => {
@@ -147,6 +157,7 @@ const Home = () => {
     fetchTotals();
     fetchEditors();
     fetchAnnouncements();
+    fetchIssuesCount();
   }, []);
 
   const stats = [
@@ -356,21 +367,23 @@ const Home = () => {
       </section>
 
 
-        {/* Call for Papers */}
-      <section className="py-16 bg-secondary/30">
-        <div className="container mx-auto px-4 text-center">
-          <Megaphone className="h-10 w-10 text-primary mx-auto mb-4" />
-          <h2 className="text-3xl font-bold mb-4">Call for Papers</h2>
-          <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-            Submit your latest research to our upcoming issue focusing on
-            <strong> “Innovation and Sustainable Development in Africa”</strong>.
-            Papers are welcome until <strong>March 30, 2026</strong>.
-          </p>
-          <Link to="/submission">
-            <Button size="lg">Submit Now</Button>
-          </Link>
-        </div>
-      </section>
+   {/* Call for Papers */}
+<section className="py-16 bg-secondary/30">
+  <div className="container mx-auto px-4 text-center">
+    <Megaphone className="h-10 w-10 text-primary mx-auto mb-4" />
+    <h2 className="text-3xl font-bold mb-4">Call for Papers</h2>
+    <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
+      Submit your latest research to our upcoming {totalIssues} issue
+      {totalIssues > 1 ? "s" : ""} focusing on
+      <strong> “Innovation and Sustainable Development in Africa”</strong>.
+      Papers are welcome until <strong>March 30, 2026</strong>.
+    </p>
+    <Link to="/submission">
+      <Button size="lg">Submit Now</Button>
+    </Link>
+  </div>
+</section>
+
 
       {/* Journal Metrics Section */}
       <section className="py-16 bg-secondary">

@@ -39,6 +39,7 @@ const Footer = () => {
     fetchContactInfo();
   }, []);
 
+ 
   return (
     <footer className="bg-primary text-primary-foreground">
       <div className="container mx-auto px-4 py-12">

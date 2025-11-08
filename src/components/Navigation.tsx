@@ -22,7 +22,7 @@ const Navigation = () => {
     social?: {
       facebook?: string;
       twitter?: string;
-      linkedIn?: string;
+      linkedin?: string;
       instagram?: string;
     };
   }>({});
@@ -72,26 +72,22 @@ const Navigation = () => {
   useEffect(() => {
     const fetchContactInfo = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/contact-info`);
+        const res = await axios.get(
+          `${import.meta.env.VITE_API_URL}/contact-info`
+        );
         if (res.data?.data?.contactInfo) {
-          const info = res.data.data.contactInfo;
-          setContactInfo({
-            phone: info.phone,
-            email: info.email,
-            social: {
-              facebook: info.facebook,
-              twitter: info.twitter,
-              linkedIn: info.linkedIn,
-              instagram: info.instagram,
-            },
-          });
+          const { email, phone, social } =
+            res.data.data.contactInfo;
+          setContactInfo({ email, phone,social });
         }
       } catch (error) {
-        console.error("❌ Failed to fetch contact info:", error);
+        console.error(" Failed to fetch contact info in footer:", error);
       }
     };
+
     fetchContactInfo();
   }, []);
+
 
   useEffect(() => {
     const fetchLogoAndTitle = async () => {
@@ -153,7 +149,7 @@ const Navigation = () => {
             
             
               <a
-                href={contactInfo.social?.linkedIn}
+                href={contactInfo.social?.linkedin}
                 target="_blank"
                 rel="noopener noreferrer"
               >

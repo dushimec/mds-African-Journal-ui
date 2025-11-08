@@ -29,6 +29,7 @@ const Home = () => {
   const [totalIssues, setTotalIssues] = useState(0);
   const [editorInChief, setEditorInChief] = useState<any>(null);
   const [associateEditors, setAssociateEditors] = useState<any[]>([]);
+  const [totalPublished, setTotalPublished] = useState(0);
 
   const [journalMetrics, setJournalMetrics] = useState({
     acceptanceRate: "0%",
@@ -45,14 +46,14 @@ const Home = () => {
   };
 
   const fetchIssuesCount = async () => {
-  try {
-    const issuesRes = await axios.get(`${backendUrl}/issues/`);
-    const issuesData = issuesRes.data.data || [];
-    setTotalIssues(issuesData.length); // ✅ count all issues
-  } catch (error) {
-    console.error("Failed to fetch issues count", error);
-  }
-};
+    try {
+      const issuesRes = await axios.get(`${backendUrl}/issues/`);
+      const issuesData = issuesRes.data.data || [];
+      setTotalIssues(issuesData.length); // ✅ count all issues
+    } catch (error) {
+      console.error("Failed to fetch issues count", error);
+    }
+  };
 
   // Fetch articles & compute metrics
   const fetchArticles = async () => {
@@ -65,13 +66,21 @@ const Home = () => {
       );
       setFeaturedArticles(publishedArticles);
 
+      setTotalPublished(publishedArticles.length);
+
       const total = allArticles.length;
       const accepted = publishedArticles.length;
-      const rejected = allArticles.filter(a => a.status === "REJECTED").length;
+      const rejected = allArticles.filter(
+        (a) => a.status === "REJECTED"
+      ).length;
 
       setJournalMetrics({
-        acceptanceRate: total ? ((accepted / total) * 100).toFixed(1) + "%" : "0%",
-        rejectionRate: total ? ((rejected / total) * 100).toFixed(1) + "%" : "0%",
+        acceptanceRate: total
+          ? ((accepted / total) * 100).toFixed(1) + "%"
+          : "0%",
+        rejectionRate: total
+          ? ((rejected / total) * 100).toFixed(1) + "%"
+          : "0%",
         totalSubmissions: total,
       });
     } catch (error) {
@@ -92,7 +101,6 @@ const Home = () => {
       console.error("Error fetching totals:", error);
     }
   };
-
 
   // Fetch editorial board
   const fetchEditors = async () => {
@@ -161,7 +169,9 @@ const Home = () => {
   }, []);
 
   const stats = [
-    { icon: BookOpen, label: "Published Articles", value: journalMetrics.totalSubmissions },
+    // { icon: BookOpen, label: "Published Articles", value: journalMetrics.totalSubmissions },
+    { icon: BookOpen, label: "Published Articles", value: totalPublished },
+
     { icon: Users, label: "Active Subscribers", value: totalSubscribers },
     { icon: Globe, label: "Countries", value: "68" },
   ];
@@ -269,90 +279,98 @@ const Home = () => {
                     </div>
                   </Card>
                 ))
-              : featuredArticles.slice(0, 3).map((article: any, index: number) => (
-                  <Card
-                    key={index}
-                    className="shadow-medium hover:shadow-strong transition-all h-full flex flex-col justify-between"
-                  >
-                    <div>
-                      <CardHeader>
-                        <div className="text-sm text-primary font-bold mb-2">
-                          {article.keywords}
-                        </div>
-                        <CardTitle className="line-clamp-2">
-                          {article.manuscriptTitle || "Untitled Article"}
-                        </CardTitle>
-                      </CardHeader>
-
-                      <CardContent>
-                        <p className="text-muted-foreground mb-4">
-                          {Array.isArray(article.authors)
-                            ? article.authors.map((a: any) => a.fullName).join(", ")
-                            : article.user
-                            ? `${article.user.firstName} ${article.user.lastName}`
-                            : "Unknown Author"}
-                        </p>
-
-                        <p className="text-muted-foreground mb-4 leading-relaxed line-clamp-3">
-                          {expandedId === article.id
-                            ? article.abstract
-                            : `${article.abstract?.slice(0, 150) || ""}...`}
-                        </p>
-
-                        {expandedId === article.id && (
-                          <div className="mt-2 space-y-2 text-sm">
-                            <p>
-                              <strong>Keywords:</strong> {article.keywords}
-                            </p>
-                            <p>
-                              <strong>Created At:</strong>{" "}
-                              {new Date(article.createdAt).toLocaleDateString()}
-                            </p>
+              : featuredArticles
+                  .slice(0, 3)
+                  .map((article: any, index: number) => (
+                    <Card
+                      key={index}
+                      className="shadow-medium hover:shadow-strong transition-all h-full flex flex-col justify-between"
+                    >
+                      <div>
+                        <CardHeader>
+                          <div className="text-sm text-primary font-bold mb-2">
+                            {article.keywords}
                           </div>
-                        )}
-                      </CardContent>
-                    </div>
+                          <CardTitle className="line-clamp-2">
+                            {article.manuscriptTitle || "Untitled Article"}
+                          </CardTitle>
+                        </CardHeader>
 
-                    <div className="flex flex-wrap gap-2 p-4 pt-0">
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => toggleExpand(article.id)}
-                      >
-                        {expandedId === article.id ? "Hide Details" : "Read More"}
-                      </Button>
+                        <CardContent>
+                          <p className="text-muted-foreground mb-4">
+                            {Array.isArray(article.authors)
+                              ? article.authors
+                                  .map((a: any) => a.fullName)
+                                  .join(", ")
+                              : article.user
+                              ? `${article.user.firstName} ${article.user.lastName}`
+                              : "Unknown Author"}
+                          </p>
 
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={downloadingId === article.id}
-                        onClick={() => {
-                          if (article.files && article.files.length > 0) {
-                            const manuscriptFile =
-                              article.files.find(
-                                (f: any) => f.fileType === "MANUSCRIPT"
-                              ) || article.files[0];
-                            handleDownload(
-                              manuscriptFile.id,
-                              manuscriptFile.fileName
-                            );
-                          } else {
-                            toast.error("No file available for download.");
-                          }
-                        }}
-                      >
-                        {downloadingId === article.id ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                          <Download className="mr-2 h-4 w-4" />
-                        )}
-                        {downloadingId === article.id
-                          ? "Downloading..."
-                          : "Download PDF"}
-                      </Button>
-                    </div>
-                  </Card>
-                ))}
+                          <p className="text-muted-foreground mb-4 leading-relaxed line-clamp-3">
+                            {expandedId === article.id
+                              ? article.abstract
+                              : `${article.abstract?.slice(0, 150) || ""}...`}
+                          </p>
+
+                          {expandedId === article.id && (
+                            <div className="mt-2 space-y-2 text-sm">
+                              <p>
+                                <strong>Keywords:</strong> {article.keywords}
+                              </p>
+                              <p>
+                                <strong>Created At:</strong>{" "}
+                                {new Date(
+                                  article.createdAt
+                                ).toLocaleDateString()}
+                              </p>
+                            </div>
+                          )}
+                        </CardContent>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2 p-4 pt-0">
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => toggleExpand(article.id)}
+                        >
+                          {expandedId === article.id
+                            ? "Hide Details"
+                            : "Read More"}
+                        </Button>
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={downloadingId === article.id}
+                          onClick={() => {
+                            if (article.files && article.files.length > 0) {
+                              const manuscriptFile =
+                                article.files.find(
+                                  (f: any) => f.fileType === "MANUSCRIPT"
+                                ) || article.files[0];
+                              handleDownload(
+                                manuscriptFile.id,
+                                manuscriptFile.fileName
+                              );
+                            } else {
+                              toast.error("No file available for download.");
+                            }
+                          }}
+                        >
+                          {downloadingId === article.id ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <Download className="mr-2 h-4 w-4" />
+                          )}
+                          {downloadingId === article.id
+                            ? "Downloading..."
+                            : "Download PDF"}
+                        </Button>
+                      </div>
+                    </Card>
+                  ))}
           </div>
 
           <div className="text-center">
@@ -366,24 +384,22 @@ const Home = () => {
         </div>
       </section>
 
-
-   {/* Call for Papers */}
-<section className="py-16 bg-secondary/30">
-  <div className="container mx-auto px-4 text-center">
-    <Megaphone className="h-10 w-10 text-primary mx-auto mb-4" />
-    <h2 className="text-3xl font-bold mb-4">Call for Papers</h2>
-    <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-      Submit your latest research to our upcoming {totalIssues} issue
-      {totalIssues > 1 ? "s" : ""} focusing on
-      <strong> “Innovation and Sustainable Development in Africa”</strong>.
-      Papers are welcome until <strong>March 30, 2026</strong>.
-    </p>
-    <Link to="/submission">
-      <Button size="lg">Submit Now</Button>
-    </Link>
-  </div>
-</section>
-
+      {/* Call for Papers */}
+      <section className="py-16 bg-secondary/30">
+        <div className="container mx-auto px-4 text-center">
+          <Megaphone className="h-10 w-10 text-primary mx-auto mb-4" />
+          <h2 className="text-3xl font-bold mb-4">Call for Papers</h2>
+          <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
+            Submit your latest research to our upcoming {totalIssues} issue
+            {totalIssues > 1 ? "s" : ""} focusing on
+            <strong> “Innovation and Sustainable Development in Africa”</strong>
+            . Papers are welcome until <strong>March 30, 2026</strong>.
+          </p>
+          <Link to="/submission">
+            <Button size="lg">Submit Now</Button>
+          </Link>
+        </div>
+      </section>
 
       {/* Journal Metrics Section */}
       <section className="py-16 bg-secondary">
@@ -393,22 +409,28 @@ const Home = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <Card className="shadow-sm p-6">
               <CardTitle>Acceptance Rate</CardTitle>
-              <CardContent className="text-2xl font-bold">{journalMetrics.acceptanceRate}</CardContent>
+              <CardContent className="text-2xl font-bold">
+                {journalMetrics.acceptanceRate}
+              </CardContent>
             </Card>
             <Card className="shadow-sm p-6">
               <CardTitle>Rejection Rate</CardTitle>
-              <CardContent className="text-2xl font-bold">{journalMetrics.rejectionRate}</CardContent>
+              <CardContent className="text-2xl font-bold">
+                {journalMetrics.rejectionRate}
+              </CardContent>
             </Card>
             <Card className="shadow-sm p-6">
               <CardTitle>Total Submissions</CardTitle>
-              <CardContent className="text-2xl font-bold">{journalMetrics.totalSubmissions}</CardContent>
+              <CardContent className="text-2xl font-bold">
+                {journalMetrics.totalSubmissions}
+              </CardContent>
             </Card>
           </div>
         </div>
       </section>
 
       {/* Editorial Board Highlight */}
-     <section className="py-16">
+      <section className="py-16">
         <div className="container mx-auto px-4 text-center">
           <Award className="h-10 w-10 text-primary mx-auto mb-4" />
           <h2 className="text-3xl font-bold mb-8">Editorial Board Highlight</h2>
@@ -436,7 +458,9 @@ const Home = () => {
                       className="h-64 w-full object-cover rounded-t-2xl"
                     />
                     <CardContent className="pt-4">
-                      <h3 className="text-xl font-semibold">{editorInChief.fullName}</h3>
+                      <h3 className="text-xl font-semibold">
+                        {editorInChief.fullName}
+                      </h3>
                       <p className="text-muted-foreground">
                         {editorInChief.role || "Managing Editor"}
                       </p>
@@ -453,7 +477,9 @@ const Home = () => {
                       className="h-56 w-full object-cover rounded-t-2xl"
                     />
                     <CardContent className="pt-4">
-                      <h3 className="text-xl font-semibold">{editor.fullName}</h3>
+                      <h3 className="text-xl font-semibold">
+                        {editor.fullName}
+                      </h3>
                       <p className="text-muted-foreground">{editor.role}</p>
                     </CardContent>
                   </Card>
@@ -489,7 +515,9 @@ const Home = () => {
                       <CardTitle className="text-lg">{news.title}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-muted-foreground mb-2">{news.description}</p>
+                      <p className="text-muted-foreground mb-2">
+                        {news.description}
+                      </p>
                       <p className="text-sm text-primary font-medium">
                         {new Date(news.date).toLocaleDateString()}
                       </p>

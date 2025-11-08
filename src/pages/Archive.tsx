@@ -36,7 +36,7 @@ const Archive = () => {
   const fetchIssues = async () => {
     try {
       const res = await axios.get(
-        "${import.meta.env.VITE_API_URL}/issues/"
+        `${import.meta.env.VITE_API_URL}/issues/`
       );
       setIssues(res.data.data || []);
     } catch (error) {

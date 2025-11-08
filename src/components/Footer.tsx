@@ -105,6 +105,14 @@ const Footer = () => {
           <div>
             <h3 className="font-semibold mb-4">Quick Links</h3>
             <ul className="space-y-2">
+               <li>
+                <Link
+                  to="/"
+                  className="text-primary-foreground/80 hover:text-primary-foreground transition-fast"
+                >
+                  Home
+                </Link>
+              </li>
               <li>
                 <Link
                   to="/about"
@@ -123,10 +131,43 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  to="/archive"
+                  to="/editorial-board"
+                  className="text-primary-foreground/80 hover:text-primary-foreground transition-fast"
+                >
+                  Editorial Board
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/author-page"
                   className="text-primary-foreground/80 hover:text-primary-foreground transition-fast"
                 >
                   Author Page
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/archive"
+                  className="text-primary-foreground/80 hover:text-primary-foreground transition-fast"
+                >
+                  Archive
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/submission"
+                  className="text-primary-foreground/80 hover:text-primary-foreground transition-fast"
+                >
+                  Submission
+                </Link>
+              </li>
+
+              <li>
+                <Link
+                  to="/contact"
+                  className="text-primary-foreground/80 hover:text-primary-foreground transition-fast"
+                >
+                  Contact
                 </Link>
               </li>
             </ul>

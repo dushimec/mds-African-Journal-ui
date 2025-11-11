@@ -18,7 +18,7 @@ const Navigation = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [contactInfo, setContactInfo] = useState<{
     phone?: string;
-    email?: string;
+    editorEmail?: string;
     social?: {
       facebook?: string;
       twitter?: string;
@@ -76,9 +76,9 @@ const Navigation = () => {
           `${import.meta.env.VITE_API_URL}/contact-info`
         );
         if (res.data?.data?.contactInfo) {
-          const { email, phone, social } =
+          const { editorEmail, phone, social } =
             res.data.data.contactInfo;
-          setContactInfo({ email, phone,social });
+          setContactInfo({ editorEmail, phone,social });
         }
       } catch (error) {
         console.error(" Failed to fetch contact info in footer:", error);
@@ -103,7 +103,7 @@ const Navigation = () => {
     };
     fetchLogoAndTitle();
   }, []);
-
+   console.log(contactInfo)
   return (
     <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border shadow-soft">
       {/* 🔹 Top Contact + Social Bar (Responsive) */}
@@ -119,11 +119,11 @@ const Navigation = () => {
               <span>{contactInfo.phone || "+250 123 456 789"}</span>
             </a>
             <a
-              href={`mailto:${contactInfo.email || "info@majaed.org"}`}
+              href={`mailto:${contactInfo.editorEmail || "info@majaed.org"}`}
               className="flex items-center space-x-1 hover:underline"
             >
               <Mail className="h-3 w-3" />
-              <span>{contactInfo.email || "info@majaed.org"}</span>
+              <span>{contactInfo.editorEmail || "info@majaed.org"}</span>
             </a>
           </div>
 

@@ -316,7 +316,7 @@ const Home = () => {
                           {expandedId === article.id && (
                             <div className="mt-2 space-y-2 text-sm">
                               <p>
-                                <strong>Keywords:</strong> {article.keywords}
+                                <strong>Keywords:</strong> {article.keywords.split(',').slice(0,5).join(',')}
                               </p>
                               <p>
                                 <strong>Created At:</strong>{" "}

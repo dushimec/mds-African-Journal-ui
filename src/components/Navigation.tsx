@@ -2,14 +2,31 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Menu, X, Mail, Phone, Search } from "lucide-react";
+import {
+  Menu,
+  X,
+  Mail,
+  Phone,
+  Search,
+} from "lucide-react";
+import { FaXTwitter, FaFacebook, FaLinkedin, FaInstagram } from "react-icons/fa6";
 import { toast } from "react-toastify";
 import axios from "axios";
 
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [contactInfo, setContactInfo] = useState<{ phone?: string; email?: string }>({});
+  const [contactInfo, setContactInfo] = useState<{
+    phone?: string;
+    editorEmail?: string;
+    social?: {
+      facebook?: string;
+      twitter?: string;
+      linkedin?: string;
+      instagram?: string;
+    };
+  }>({});
+
   const [logoUrl, setLogoUrl] = useState<string>("/logo.png");
   const [journalTitle, setJournalTitle] = useState<string>(
     "MDS African Journal of Applied Economics and Development (MAJAED)"
@@ -31,7 +48,6 @@ const Navigation = () => {
 
   const isActive = (path: string) => location.pathname === path;
 
-  //Check login status
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     setIsLoggedIn(!!token);
@@ -53,25 +69,26 @@ const Navigation = () => {
     navigate("/login");
   };
 
-  // Fetch contact info
   useEffect(() => {
     const fetchContactInfo = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/contact-info`);
+        const res = await axios.get(
+          `${import.meta.env.VITE_API_URL}/contact-info`
+        );
         if (res.data?.data?.contactInfo) {
-          setContactInfo({
-            phone: res.data.data.contactInfo.phone,
-            email: res.data.data.contactInfo.email,
-          });
+          const { editorEmail, phone, social } =
+            res.data.data.contactInfo;
+          setContactInfo({ editorEmail, phone,social });
         }
       } catch (error) {
-        console.error("❌ Failed to fetch contact info:", error);
+        console.error(" Failed to fetch contact info in footer:", error);
       }
     };
+
     fetchContactInfo();
   }, []);
 
-  // ✅ Fetch logo and journal title
+
   useEffect(() => {
     const fetchLogoAndTitle = async () => {
       try {
@@ -86,13 +103,14 @@ const Navigation = () => {
     };
     fetchLogoAndTitle();
   }, []);
-
+   console.log(contactInfo)
   return (
     <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border shadow-soft">
-      {/* 🔹 Top Contact Bar */}
+      {/* 🔹 Top Contact + Social Bar (Responsive) */}
       <div className="bg-primary text-primary-foreground text-xs md:text-sm">
-        <div className="container mx-auto flex items-center justify-between px-4 py-1">
-          <div className="flex items-center space-x-4">
+        <div className="container mx-auto px-4 py-1 flex flex-col md:flex-row md:items-center md:justify-between space-y-2 md:space-y-0">
+          {/* Contact Info */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-1 sm:space-y-0">
             <a
               href={`tel:${contactInfo.phone || "+250123456789"}`}
               className="flex items-center space-x-1 hover:underline"
@@ -101,12 +119,52 @@ const Navigation = () => {
               <span>{contactInfo.phone || "+250 123 456 789"}</span>
             </a>
             <a
-              href={`mailto:${contactInfo.email || "info@majaed.org"}`}
+              href={`mailto:${contactInfo.editorEmail || "info@majaed.org"}`}
               className="flex items-center space-x-1 hover:underline"
             >
               <Mail className="h-3 w-3" />
-              <span>{contactInfo.email || "info@majaed.org"}</span>
+              <span>{contactInfo.editorEmail || "info@majaed.org"}</span>
             </a>
+          </div>
+
+          {/* Social Icons */}
+          <div className="flex flex-row space-x-3 justify-start md:justify-end">
+            
+              <a
+                href={contactInfo.social?.facebook}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <FaFacebook className="w-4 h-4 cursor-pointer " />
+              </a>
+            
+            
+              <a
+                href={contactInfo.social?.twitter}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <FaXTwitter className="w-4 h-4 cursor-pointer" />
+              </a>
+            
+            
+              <a
+                href={contactInfo.social?.linkedin}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <FaLinkedin className="w-4 h-4 cursor-pointer" />
+              </a>
+            
+          
+              <a
+                href={contactInfo.social?.instagram}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <FaInstagram className="w-4 h-4 cursor-pointer" />
+              </a>
+            
           </div>
         </div>
       </div>
@@ -114,9 +172,16 @@ const Navigation = () => {
       {/* 🔹 Middle Bar */}
       <div className="container mx-auto px-4 py-3 border-b border-border">
         <div className="flex items-center justify-between">
-          <Link to="/" className="flex items-center space-x-2 font-bold text-xl text-primary">
+          <Link
+            to="/"
+            className="flex items-center space-x-2 font-bold text-xl text-primary"
+          >
             <div className="h-24 w-24">
-              <img src={logoUrl} alt="Logo" className="rounded-full object-cover" />
+              <img
+                src={logoUrl}
+                alt="Logo"
+                className="rounded-full object-cover"
+              />
             </div>
             <span className="font-heading text-base">{journalTitle}</span>
           </Link>
@@ -124,7 +189,11 @@ const Navigation = () => {
           <div className="hidden md:flex items-center space-x-3">
             <div className="relative">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input type="text" placeholder="Search..." className="pl-8 w-48 md:w-64" />
+              <Input
+                type="text"
+                placeholder="Search..."
+                className="pl-8 w-48 md:w-64"
+              />
             </div>
 
             {isLoggedIn ? (
@@ -166,7 +235,11 @@ const Navigation = () => {
               className="lg:hidden"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
-              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              {isMenuOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
             </Button>
           </div>
 
@@ -191,7 +264,11 @@ const Navigation = () => {
                 <div className="mt-4 space-y-2">
                   <Input type="text" placeholder="Search..." />
                   {isLoggedIn ? (
-                    <Button className="w-full" variant="destructive" onClick={handleLogout}>
+                    <Button
+                      className="w-full"
+                      variant="destructive"
+                      onClick={handleLogout}
+                    >
                       Logout
                     </Button>
                   ) : (

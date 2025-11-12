@@ -203,6 +203,7 @@ const handleDownload = async (
     setExpandedId(expandedId === id ? null : id);
   };
 
+
   return (
     <div className="min-h-screen py-12">
       <div className="container mx-auto px-4">
@@ -328,7 +329,7 @@ const handleDownload = async (
                   {expandedId === article.id && (
                     <div className="mt-2 space-y-2">
                       <p>
-                        <strong>Keywords:</strong> {article.keywords}
+                        <strong>Keywords:</strong> {article.keywords.split(',').slice(0,5).join(',')}
                       </p>
                       <p>
                         <strong>Created At:</strong>{" "}
@@ -344,7 +345,7 @@ const handleDownload = async (
 
                   <div className="flex flex-wrap gap-2 mt-4">
                     {article.keywords &&
-                      article.keywords.split(",").map((keyword, index) => (
+                      article.keywords.split(",").slice(0,5).map((keyword, index) => (
                         <Badge
                           key={index}
                           variant="outline"

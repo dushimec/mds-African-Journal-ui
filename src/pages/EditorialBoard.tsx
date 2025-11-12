@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Mail } from "lucide-react";
-import { toast } from "react-toastify"
+import { toast } from "react-toastify";
 
 const SkeletonCard = ({ type }: { type: "chief" | "editor" }) => {
   if (type === "chief") {
@@ -43,6 +43,12 @@ const EditorialBoard = () => {
   const [loading, setLoading] = useState(true);
 
   const [showModal, setShowModal] = useState(false);
+  const [expandedBioId, setExpandedBioId] = useState<string | null>(null);
+
+  const toggleBio = (id: string) => {
+    setExpandedBioId((prev) => (prev === id ? null : id));
+  };
+
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -122,7 +128,9 @@ const EditorialBoard = () => {
 
       if (!res.ok) throw new Error("Request failed");
 
-      toast.success("Your request has been submitted! Awaiting admin approval ");
+      toast.success(
+        "Your request has been submitted! Awaiting admin approval "
+      );
       setShowModal(false);
 
       setFormData({
@@ -253,10 +261,32 @@ const EditorialBoard = () => {
                       <h3 className="text-2xl font-bold">
                         {editorInChief.fullName}
                       </h3>
-                      <p className="text-gray-600 mb-4">{editorInChief.bio}</p>
+                      <p className="text-gray-600 mb-4">
+                        {editorInChief.email}
+                      </p>
+                      <p className="text-gray-600 mb-4">
+                        {editorInChief.affiliation}
+                      </p>
+                      
+
                       <Button variant="outline" size="sm">
                         <Mail className="mr-2 h-4 w-4" /> Contact
                       </Button>
+                      <div className="mt-5">
+                        <button
+                          onClick={() => toggleBio(editorInChief.id)}
+                          className="bg-primary rounded-md text-white py-1 px-10"
+                        >
+                          {expandedBioId === editorInChief.id
+                            ? "Hide"
+                            : "Read More"}
+                        </button>
+                        {expandedBioId === editorInChief.id && (
+                          <p className="mt-2 text-gray-700">
+                            {editorInChief.bio}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -286,15 +316,26 @@ const EditorialBoard = () => {
                       <Badge variant="secondary" className="text-xs my-3">
                         {editor.role}
                       </Badge>
-                      <p className="text-sm text-gray-600">
-                        {editor.affiliation}
-                      </p>
                       <p className="text-sm text-gray-600 mb-4">
                         {editor.qualifications}
+                      </p>
+                       <p className="text-sm text-gray-600 mb-4">
+                        {editor.email}
                       </p>
                       <Button variant="outline" size="sm">
                         <Mail className="mr-2 h-3 w-3" /> Contact
                       </Button>
+                      <div className="mt-5">
+                        <button
+                          onClick={() => toggleBio(editor.id)}
+                          className="bg-primary rounded-md text-white py-1 px-10"
+                        >
+                          {expandedBioId === editor.id ? "Hide" : "Read More"}
+                        </button>
+                        {expandedBioId === editor.id && (
+                          <p className="mt-2 text-gray-700">{editor.bio}</p>
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
                 ))}

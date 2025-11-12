@@ -21,6 +21,8 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "react-toastify";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
 
 // ✅ Base URL from Vite environment variable
 const BACKEND_URL = import.meta.env.VITE_API_URL;
@@ -33,6 +35,7 @@ const Journal = () => {
   const [expandedId, setExpandedId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState(0);
 
   // ✅ Fetch articles
   useEffect(() => {
@@ -68,28 +71,114 @@ const Journal = () => {
     fetchTopics();
   }, []);
 
-  const handleDownload = async (fileId: string, fileName: string) => {
-    try {
-      setDownloadingId(fileId);
-      const response = await axios.get(
-        `${BACKEND_URL}/submission/download/${fileId}`,
-        { responseType: "blob" }
-      );
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", `${fileName}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      toast.error("Failed to download file.");
-    } finally {
-      setDownloadingId(null);
+const handleDownload = async (
+  submissionId: string,
+  fileIds: string[],
+  submissionTitle?: string
+) => {
+  if (!fileIds || fileIds.length === 0) {
+    toast.error("No files selected for download.");
+    return;
+  }
+
+  try {
+    setDownloadingId(submissionId);
+    setDownloadProgress(0);
+
+    // 1️⃣ Fetch file info from backend
+    const res = await axios.get(`${BACKEND_URL}/submission/${submissionId}/download`, {
+      params: { files: fileIds.join(",") },
+    });
+
+    const data = res.data;
+    if (!data || (!data.fileUrl && !data.files)) {
+      toast.error("No files found.");
+      return;
     }
-  };
+
+    // --- Single file download with progress ---
+    if (data.fileUrl) {
+      const response = await axios.get(data.fileUrl, {
+        responseType: "blob",
+        onDownloadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            setDownloadProgress(Math.round((progressEvent.loaded * 100) / progressEvent.total));
+          }
+        },
+      });
+      saveAs(response.data, fileIds[0] + ".pdf");
+      return;
+    }
+
+    // --- Multiple files download (ZIP) ---
+    const files = data.files || [];
+    const skippedFiles: string[] = data.skippedFiles || [];
+
+    if (files.length === 0) {
+      toast.error("None of the selected files could be downloaded.");
+      if (skippedFiles.length) toast.info(`Skipped: ${skippedFiles.join(", ")}`);
+      return;
+    }
+
+    const zip = new JSZip();
+    let totalBytes = 0;
+    const fileSizes: number[] = [];
+
+    // 1️⃣ First, fetch file sizes (optional for progress tracking)
+    await Promise.all(
+      files.map(async (file, idx) => {
+        try {
+          const head = await axios.head(file.url);
+          fileSizes[idx] = parseInt(head.headers["content-length"] || "0", 10);
+          totalBytes += fileSizes[idx];
+        } catch {
+          fileSizes[idx] = 0;
+          skippedFiles.push(file.fileName);
+        }
+      })
+    );
+
+    let loadedBytes = 0;
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (skippedFiles.includes(file.fileName)) continue;
+
+      try {
+        const response = await axios.get(file.url, {
+          responseType: "arraybuffer",
+          onDownloadProgress: (progressEvent) => {
+            if (progressEvent.loaded && fileSizes[i]) {
+              loadedBytes += progressEvent.loaded;
+              setDownloadProgress(Math.round((loadedBytes * 100) / totalBytes));
+            }
+          },
+        });
+        zip.file(file.fileName, response.data);
+      } catch (err: any) {
+        console.error(`❌ Failed to fetch ${file.fileName}: ${err.message}`);
+        skippedFiles.push(file.fileName);
+      }
+    }
+
+    const zipBlob = await zip.generateAsync({ type: "blob", compression: "DEFLATE" });
+    saveAs(zipBlob, `${submissionTitle || "submission-files"}.zip`);
+
+    if (skippedFiles.length) {
+      toast.info(`Skipped files: ${skippedFiles.join(", ")}`);
+    }
+
+    setDownloadProgress(100); // complete
+  } catch (err: any) {
+    console.error("Download error:", err);
+    toast.error("Failed to download files. Some files might be inaccessible.");
+  } finally {
+    setDownloadingId(null);
+    setDownloadProgress(0);
+  }
+};
 
   const filteredArticles = articles.filter((article) => {
     const title = article.manuscriptTitle?.toLowerCase() || "";
@@ -281,13 +370,10 @@ const Journal = () => {
                       disabled={downloadingId === article.id}
                       onClick={() => {
                         if (article.files && article.files.length > 0) {
-                          const manuscriptFile =
-                            article.files.find(
-                              (f: any) => f.fileType === "MANUSCRIPT"
-                            ) || article.files[0];
                           handleDownload(
-                            manuscriptFile.id,
-                            manuscriptFile.fileName
+                            article.id,
+                            article.files.map((f: any) => f.id),
+                            article.manuscriptTitle
                           );
                         } else {
                           toast.error("No file available for download.");

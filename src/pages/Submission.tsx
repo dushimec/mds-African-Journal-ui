@@ -9,15 +9,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Upload, FileText, CheckCircle, Users, Send } from "lucide-react";
-import {toast} from 'react-toastify'
+import { toast } from "react-toastify";
 
 const Submission = () => {
   const API_URL = import.meta.env.VITE_API_URL;
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
 
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState<number>(1);
   const [topics, setTopics] = useState<string[]>([]);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<any>({
     manuscriptTitle: "",
     topic: "",
     abstract: "",
@@ -28,6 +28,17 @@ const Submission = () => {
     conflicts: false,
     copyright: false,
   });
+
+  // Load from localStorage
+  useEffect(() => {
+    const savedData = localStorage.getItem("submission_form");
+    if (savedData) setFormData(JSON.parse(savedData));
+  }, []);
+
+  // Save to localStorage
+  useEffect(() => {
+    localStorage.setItem("submission_form", JSON.stringify(formData));
+  }, [formData]);
 
   // Fetch topics from API
   useEffect(() => {
@@ -45,7 +56,7 @@ const Submission = () => {
 
   // Check login
   useEffect(() => {
-    const token = localStorage.getItem("access_token") 
+    const token = localStorage.getItem("access_token");
     if (!token) {
       toast.error("You must login first!");
       navigate("/login");
@@ -65,21 +76,19 @@ const Submission = () => {
     { title: "Ethics Documentation", description: "Ethics approval for human/animal studies", required: false },
   ];
 
-  // Author handlers
   const addAuthor = () =>
     setFormData({
       ...formData,
-      authors: [...formData.authors, { fullName: "", email: "", affiliation: "" }]
+      authors: [...formData.authors, { fullName: "", email: "", affiliation: "" }],
     });
 
   const updateAuthor = (index: number, field: string, value: string) => {
-    const updatedAuthors = formData.authors.map((author, i) =>
+    const updatedAuthors = formData.authors.map((author: any, i: number) =>
       i === index ? { ...author, [field]: value } : author
     );
     setFormData({ ...formData, authors: updatedAuthors });
   };
 
-  // File upload handler
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
     requirement: string
@@ -95,10 +104,7 @@ const Submission = () => {
 
     const filesArray = Array.from(event.target.files);
     const data = new FormData();
-
-    filesArray.forEach((file) => {
-      data.append("files", file);
-    });
+    filesArray.forEach((file) => data.append("files", file));
 
     try {
       const res = await fetch(`${API_URL}/submission/upload-multiple`, {
@@ -107,13 +113,10 @@ const Submission = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const contentType = res.headers.get("content-type");
       let result: any = {};
-      if (contentType && contentType.includes("application/json")) {
-        result = await res.json();
-        toast.success("File upload successfully");
-      } else {
-        const text = await res.text();
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) result = await res.json();
+      else {
         toast.error("File upload failed");
         return;
       }
@@ -122,13 +125,10 @@ const Submission = () => {
         const uploadedFiles = result.files.map((file: any) => ({
           ...file,
           requirement,
+          fileUrl: file.secureUrl || file.fileUrl,
         }));
-
-        setFormData((prev) => ({
-          ...prev,
-          files: [...prev.files, ...uploadedFiles],
-        }));
-        toast.success("File upload successfully");
+        setFormData((prev: any) => ({ ...prev, files: [...prev.files, ...uploadedFiles] }));
+        toast.success("File uploaded successfully");
       } else {
         toast.error(result.message || "File upload failed");
       }
@@ -140,23 +140,23 @@ const Submission = () => {
   const nextStep = () => currentStep < 4 && setCurrentStep(currentStep + 1);
   const prevStep = () => currentStep > 1 && setCurrentStep(currentStep - 1);
 
-  // Submission
   const handleSubmit = async () => {
     const payload = {
       manuscriptTitle: formData.manuscriptTitle,
       topic: formData.topic,
       abstract: formData.abstract,
       keywords: formData.keywords,
-      authors: formData.authors.map((a, i) => ({
+      authors: formData.authors.map((a: any, i: number) => ({
         fullName: a.fullName,
         email: a.email,
         affiliation: a.affiliation,
         isCorresponding: i === 0,
         order: i + 1,
       })),
-      files: formData.files.map((f) => ({
+      files: formData.files.map((f: any) => ({
         fileName: f.fileName || f.original_filename || f.name,
-        fileUrl: f.fileUrl || f.secure_url,
+        fileUrl: f.secureUrl || f.fileUrl,
+        secureUrl: f.secureUrl || f.fileUrl,
         mimeType: f.mimeType || f.type || "application/pdf",
         fileSize: f.fileSize || f.bytes || 1000,
         fileType:
@@ -167,21 +167,9 @@ const Submission = () => {
             : "ETHICS_DOCUMENTATION",
       })),
       declarations: [
-        {
-          type: "ETHICAL_CONDUCT",
-          isChecked: formData.ethics,
-          text: "Ethics approval confirmation",
-        },
-        {
-          type: "CONFLICT_OF_INTEREST",
-          isChecked: formData.conflicts,
-          text: "Conflict of interest disclosure",
-        },
-        {
-          type: "COPYRIGHT_TRANSFER",
-          isChecked: formData.copyright,
-          text: "Copyright transfer confirmation",
-        },
+        { type: "ETHICAL_CONDUCT", isChecked: formData.ethics, text: "Ethics approval confirmation" },
+        { type: "CONFLICT_OF_INTEREST", isChecked: formData.conflicts, text: "Conflict of interest disclosure" },
+        { type: "COPYRIGHT_TRANSFER", isChecked: formData.copyright, text: "Copyright transfer confirmation" },
       ],
     };
 
@@ -194,9 +182,11 @@ const Submission = () => {
         },
         body: JSON.stringify(payload),
       });
+
       const result = await res.json();
       if (res.ok) {
         toast.success("Submission successful!");
+        localStorage.removeItem("submission_form");
         setFormData({
           manuscriptTitle: "",
           topic: "",
@@ -217,9 +207,8 @@ const Submission = () => {
     }
   };
 
-  const getFileStatus = (reqTitle: string) => {
-    return formData.files.find(f => f.requirement === reqTitle) ? "Uploaded" : "Pending";
-  };
+  const getFileStatus = (reqTitle: string) =>
+    formData.files.find((f: any) => f.requirement === reqTitle) ? "Uploaded" : "Pending";
 
   return (
     <div className="min-h-screen py-8 md:py-12">
@@ -232,12 +221,18 @@ const Submission = () => {
           </p>
         </div>
 
-        {/* Steps - Responsive */}
+        {/* Steps */}
         <div className="mb-8 md:mb-12">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0">
             {steps.map((step, index) => (
               <div key={step.number} className="flex items-center">
-                <div className={`flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 ${currentStep >= step.number ? "bg-primary border-primary text-primary-foreground" : "border-border text-muted-foreground"}`}>
+                <div
+                  className={`flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 ${
+                    currentStep >= step.number
+                      ? "bg-primary border-primary text-primary-foreground"
+                      : "border-border text-muted-foreground"
+                  }`}
+                >
                   {currentStep > step.number ? <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6" /> : <step.icon className="h-5 w-5 sm:h-6 sm:w-6" />}
                 </div>
                 <div className="ml-2 sm:ml-3 text-sm font-medium hidden sm:block">{step.title}</div>
@@ -247,17 +242,13 @@ const Submission = () => {
               </div>
             ))}
           </div>
-          {/* Mobile step titles */}
           <div className="sm:hidden flex justify-between mt-4 px-2">
             {steps.map((step) => (
-              <div key={step.number} className="text-xs text-center max-w-16 truncate">
-                {step.title}
-              </div>
+              <div key={step.number} className="text-xs text-center max-w-16 truncate">{step.title}</div>
             ))}
           </div>
         </div>
 
-        {/* Card */}
         <Card className="shadow-strong">
           <CardContent className="p-4 sm:p-6 md:p-8">
 
@@ -268,17 +259,17 @@ const Submission = () => {
                 <div className="space-y-4">
                   <div>
                     <Label>Article Title *</Label>
-                    <Input 
-                      value={formData.manuscriptTitle} 
-                      onChange={(e) => setFormData({ ...formData, manuscriptTitle: e.target.value })} 
+                    <Input
+                      value={formData.manuscriptTitle}
+                      onChange={(e) => setFormData({ ...formData, manuscriptTitle: e.target.value })}
                       placeholder="Enter your manuscript title"
                     />
                   </div>
                   <div>
                     <Label>Research Topic *</Label>
-                    <Select value={formData.topic} onValueChange={(value) => setFormData({...formData, topic: value})}>
+                    <Select value={formData.topic} onValueChange={(value) => setFormData({ ...formData, topic: value })}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select Topic"/>
+                        <SelectValue placeholder="Select Topic" />
                       </SelectTrigger>
                       <SelectContent>
                         {topics.map((topic) => (
@@ -289,18 +280,18 @@ const Submission = () => {
                   </div>
                   <div>
                     <Label>Keywords *</Label>
-                    <Input 
-                      value={formData.keywords} 
-                      onChange={(e) => setFormData({ ...formData, keywords: e.target.value })} 
-                      placeholder="Enter keywords separated by commas" 
+                    <Input
+                      value={formData.keywords}
+                      onChange={(e) => setFormData({ ...formData, keywords: e.target.value })}
+                      placeholder="Enter keywords separated by commas"
                     />
                   </div>
                   <div>
                     <Label>Abstract *</Label>
-                    <Textarea 
-                      value={formData.abstract} 
-                      onChange={(e) => setFormData({ ...formData, abstract: e.target.value })} 
-                      className="min-h-32" 
+                    <Textarea
+                      value={formData.abstract}
+                      onChange={(e) => setFormData({ ...formData, abstract: e.target.value })}
+                      className="min-h-32"
                       placeholder="Enter your abstract here..."
                     />
                   </div>
@@ -312,37 +303,34 @@ const Submission = () => {
             {currentStep === 2 && (
               <div className="space-y-6">
                 <h2 className="text-xl sm:text-2xl font-bold mb-6">Author Information</h2>
-                {formData.authors.map((author, i) => (
+                {formData.authors.map((author: any, i: number) => (
                   <Card key={i} className="shadow-soft">
                     <CardHeader>
                       <CardTitle className="text-base sm:text-lg">
-                        Author {i+1} 
-                        {i===0 && <Badge className="ml-2 text-xs">Corresponding</Badge>}
+                        Author {i + 1} {i === 0 && <Badge className="ml-2 text-xs">Corresponding</Badge>}
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <Input 
-                        placeholder="Full Name" 
-                        value={author.fullName} 
-                        onChange={(e) => updateAuthor(i, "fullName", e.target.value)} 
+                      <Input
+                        placeholder="Full Name"
+                        value={author.fullName}
+                        onChange={(e) => updateAuthor(i, "fullName", e.target.value)}
                       />
-                      <Input 
-                        placeholder="Email" 
-                        type="email" 
-                        value={author.email} 
-                        onChange={(e) => updateAuthor(i, "email", e.target.value)} 
+                      <Input
+                        placeholder="Email"
+                        type="email"
+                        value={author.email}
+                        onChange={(e) => updateAuthor(i, "email", e.target.value)}
                       />
-                      <Input 
-                        placeholder="Affiliation" 
-                        value={author.affiliation} 
-                        onChange={(e) => updateAuthor(i, "affiliation", e.target.value)} 
+                      <Input
+                        placeholder="Affiliation"
+                        value={author.affiliation}
+                        onChange={(e) => updateAuthor(i, "affiliation", e.target.value)}
                       />
                     </CardContent>
                   </Card>
                 ))}
-                <Button onClick={addAuthor} variant="outline" className="w-full">
-                  Add Another Author
-                </Button>
+                <Button onClick={addAuthor} variant="outline" className="w-full">Add Another Author</Button>
               </div>
             )}
 
@@ -355,7 +343,7 @@ const Submission = () => {
                     <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                       <div className="flex-1">
                         <h3 className="font-medium flex items-center gap-2 flex-wrap">
-                          {req.title} 
+                          {req.title}
                           <Badge variant={getFileStatus(req.title) === "Uploaded" ? "secondary" : "destructive"} className="text-xs">
                             {getFileStatus(req.title)}
                           </Badge>
@@ -364,14 +352,8 @@ const Submission = () => {
                       </div>
                       <Button variant="outline" size="sm" asChild className="w-full sm:w-auto">
                         <label className="cursor-pointer">
-                          <Upload className="mr-2 h-4 w-4"/> 
-                          Upload
-                          <input 
-                            type="file" 
-                            hidden 
-                            onChange={(e) => handleFileUpload(e, req.title)} 
-                            className="sr-only"
-                          />
+                          <Upload className="mr-2 h-4 w-4" /> Upload
+                          <input type="file" hidden onChange={(e) => handleFileUpload(e, req.title)} className="sr-only" />
                         </label>
                       </Button>
                     </CardContent>
@@ -383,8 +365,6 @@ const Submission = () => {
             {/* Step 4 */}
             {currentStep === 4 && (
               <div className="space-y-6">
-                <h2 className="text-xl sm:text-2xl font-bold mb-6">Review & Submit</h2>
-
                 {/* Manuscript Details */}
                 <Card className="shadow-soft">
                   <CardHeader>
@@ -394,16 +374,13 @@ const Submission = () => {
                     <p><b>Title:</b> {formData.manuscriptTitle || <span className="text-muted-foreground">Not provided</span>}</p>
                     <p><b>Topic:</b> {formData.topic || <span className="text-muted-foreground">Not selected</span>}</p>
                     <p><b>Keywords:</b> {formData.keywords || <span className="text-muted-foreground">Not provided</span>}</p>
-                    <div>
-                      <b>Abstract:</b>
-                      <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
-                        {formData.abstract || "Not provided"}
-                      </p>
+                    <div><b>Abstract:</b>
+                      <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{formData.abstract || "Not provided"}</p>
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* Authors Table */}
+                {/* Authors */}
                 <Card className="shadow-soft">
                   <CardHeader>
                     <CardTitle className="text-lg">Authors</CardTitle>
@@ -421,7 +398,7 @@ const Submission = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {formData.authors.map((a, i) => (
+                          {formData.authors.map((a: any, i: number) => (
                             <tr key={i} className="hover:bg-muted-foreground/5">
                               <td className="border border-border px-3 py-2">{i + 1}</td>
                               <td className="border border-border px-3 py-2 font-medium">{a.fullName || "-"}</td>
@@ -436,7 +413,7 @@ const Submission = () => {
                   </CardContent>
                 </Card>
 
-                {/* Files Table */}
+                {/* Uploaded Files */}
                 <Card className="shadow-soft">
                   <CardHeader>
                     <CardTitle className="text-lg">Uploaded Files</CardTitle>
@@ -453,16 +430,14 @@ const Submission = () => {
                         </thead>
                         <tbody>
                           {requirements.map((req, i) => {
-                            const uploadedFile = formData.files.find(f => f.requirement === req.title);
+                            const file = formData.files.find((f: any) => f.requirement === req.title);
                             return (
                               <tr key={i} className="hover:bg-muted-foreground/5">
                                 <td className="border border-border px-3 py-2 font-medium">{req.title}</td>
-                                <td className="border border-border px-3 py-2 hidden sm:table-cell">
-                                  {uploadedFile?.fileName || "-"}
-                                </td>
+                                <td className="border border-border px-3 py-2 hidden sm:table-cell">{file?.fileName || "-"}</td>
                                 <td className="border border-border px-3 py-2">
-                                  <Badge variant={uploadedFile ? "secondary" : "destructive"} className="text-xs">
-                                    {uploadedFile ? "Uploaded" : "Pending"}
+                                  <Badge variant={file ? "secondary" : "destructive"} className="text-xs">
+                                    {file ? "Uploaded" : "Pending"}
                                   </Badge>
                                 </td>
                               </tr>
@@ -478,80 +453,51 @@ const Submission = () => {
                 <Card className="shadow-soft">
                   <CardHeader>
                     <CardTitle className="text-lg">Declarations</CardTitle>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Please confirm each declaration before submitting your manuscript.
-                    </p>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-start justify-between p-4 border rounded-lg hover:bg-muted-foreground/5 transition">
-                      <div className="flex-1 mr-4">
-                        <p className="font-medium">Ethics Approval</p>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          I confirm that all research involving human or animal subjects has received ethics approval.
-                        </p>
-                      </div>
-                      <Checkbox 
-                        checked={formData.ethics} 
-                        onCheckedChange={(v) => setFormData({ ...formData, ethics: v as boolean })} 
-                      />
-                    </div>
-
-                    <div className="flex items-start justify-between p-4 border rounded-lg hover:bg-muted-foreground/5 transition">
-                      <div className="flex-1 mr-4">
-                        <p className="font-medium">Conflict of Interest</p>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          I declare that there are no conflicts of interest related to this manuscript.
-                        </p>
-                      </div>
-                      <Checkbox 
-                        checked={formData.conflicts} 
-                        onCheckedChange={(v) => setFormData({ ...formData, conflicts: v as boolean })} 
-                      />
-                    </div>
-
-                    <div className="flex items-start justify-between p-4 border rounded-lg hover:bg-muted-foreground/5 transition">
-                      <div className="flex-1 mr-4">
-                        <p className="font-medium">Copyright Transfer</p>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          I confirm that I have the right to transfer copyright to the publisher upon acceptance.
-                        </p>
-                      </div>
-                      <Checkbox 
-                        checked={formData.copyright} 
-                        onCheckedChange={(v) => setFormData({ ...formData, copyright: v as boolean })} 
-                      />
+                  <CardContent className="space-y-3">
+                    <div className="flex flex-col gap-2">
+                      <Checkbox
+                        checked={formData.ethics}
+                        onCheckedChange={(checked) => setFormData({ ...formData, ethics: !!checked })}
+                      >
+                        I confirm that the research follows ethical guidelines.
+                      </Checkbox>
+                      <Checkbox
+                        checked={formData.conflicts}
+                        onCheckedChange={(checked) => setFormData({ ...formData, conflicts: !!checked })}
+                      >
+                        I disclose any potential conflicts of interest.
+                      </Checkbox>
+                      <Checkbox
+                        checked={formData.copyright}
+                        onCheckedChange={(checked) => setFormData({ ...formData, copyright: !!checked })}
+                      >
+                        I agree to the copyright transfer policy.
+                      </Checkbox>
                     </div>
                   </CardContent>
                 </Card>
-
               </div>
             )}
 
             {/* Navigation */}
             <div className="flex flex-col sm:flex-row justify-between gap-4 pt-6 md:pt-8">
-              <Button 
-                variant="outline" 
-                onClick={prevStep} 
-                disabled={currentStep===1}
-                className="order-2 sm:order-1"
-              >
+              <Button variant="outline" onClick={prevStep} disabled={currentStep === 1} className="order-2 sm:order-1">
                 Previous
               </Button>
               {currentStep < 4 ? (
-                <Button onClick={nextStep} className="order-1 sm:order-2 w-full sm:w-auto">
-                  Next
-                </Button>
+                <Button onClick={nextStep} className="order-1 sm:order-2 w-full sm:w-auto">Next</Button>
               ) : (
-                <Button 
-                  onClick={handleSubmit} 
+                <Button
+                  onClick={handleSubmit}
                   disabled={!formData.ethics || !formData.conflicts || !formData.copyright}
                   className="order-1 sm:order-2 w-full sm:w-auto"
                 >
-                  <Send className="mr-2 h-4 w-4"/>
-                  Submit Manuscript
+                  <Send className="mr-2 h-4 w-4" /> Submit Manuscript
                 </Button>
               )}
             </div>
+
           </CardContent>
         </Card>
       </div>

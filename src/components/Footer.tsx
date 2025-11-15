@@ -20,24 +20,31 @@ const Footer = () => {
   const currentYear = new Date().getFullYear();
   const [contactInfo, setContactInfo] = useState<ContactInfo>({});
 
-  useEffect(() => {
-    const fetchContactInfo = async () => {
-      try {
-        const res = await axios.get(
-          `${import.meta.env.VITE_API_URL}/contact-info`
-        );
-        if (res.data?.data?.contactInfo) {
-          const { email, phone, mailingAddress, social } =
-            res.data.data.contactInfo;
-          setContactInfo({ email, phone, mailingAddress, social });
-        }
-      } catch (error) {
-        console.error(" Failed to fetch contact info in footer:", error);
-      }
-    };
+useEffect(() => {
+  const fetchContactInfo = async () => {
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_API_URL}/contact-info`
+      );
+      if (res.data?.data?.contactInfo) {
+        const apiInfo = res.data.data.contactInfo;
+        const { editorEmail, phone, mailingAddress, social } = apiInfo;
 
-    fetchContactInfo();
-  }, []);
+        setContactInfo({
+          email: editorEmail,
+          phone: phone,
+          mailingAddress: mailingAddress || "Kigali, Rwanda",
+          social: social || {},
+        });
+      }
+    } catch (error) {
+      console.error("Failed to fetch contact info in footer:", error);
+    }
+  };
+
+  fetchContactInfo();
+}, []);
+
 
  
   return (

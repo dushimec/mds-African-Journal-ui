@@ -14,6 +14,7 @@ interface File {
   fileType: string;
   fileUrl: string;
   fileSize: number;
+  isEdited?: boolean;
 }
 
 interface User {
@@ -40,7 +41,6 @@ interface Stats {
 
 const ITEMS_PER_PAGE = 5;
 
-// Allowed status enums
 const STATUS_ENUMS = [
   "DRAFT",
   "SUBMITTED",
@@ -58,6 +58,9 @@ const SubmissionsPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState<Stats>({});
   const [currentPage, setCurrentPage] = useState(1);
+  const [downloadingFileId, setDownloadingFileId] = useState<string | null>(null);
+  const [uploadingFileId, setUploadingFileId] = useState<string | null>(null);
+
 
   const token = localStorage.getItem("access_token");
 
@@ -109,8 +112,7 @@ const SubmissionsPage: React.FC = () => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ status: editing.status }), 
-        
+          body: JSON.stringify({ status: editing.status }),
         }
       );
       const data = await res.json();
@@ -164,6 +166,67 @@ const SubmissionsPage: React.FC = () => {
         console.error("Error deleting submission:", err);
         toast.error("Something went wrong.");
       }
+    }
+  };
+
+  const handleEditedFileUpload = async (
+  e: React.ChangeEvent<HTMLInputElement>,
+  submissionId: string,
+  fileId: string
+) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    setUploadingFileId(fileId);
+
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/submission/${submissionId}/files/${fileId}/edited`,
+      {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      }
+    );
+
+    const json = await res.json();
+
+    if (json.success) {
+      toast.success("File updated successfully!");
+      fetchSubmissions();
+    } else {
+      toast.error("Failed to upload edited file.");
+    }
+  } catch (err) {
+    console.error(err);
+    toast.error("Error uploading file.");
+  } finally {
+    setUploadingFileId(null);
+  }
+};
+  const handleFileDownload = async (file: File) => {
+    try {
+      setDownloadingFileId(file.id);
+
+      const res = await fetch(file.fileUrl);
+      const blob = await res.blob();
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = file.fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error("Failed to download file.");
+      console.error(err);
+    } finally {
+      setDownloadingFileId(null);
     }
   };
 
@@ -258,19 +321,51 @@ const SubmissionsPage: React.FC = () => {
                       </div>
                       <div>
                         <h3 className="font-semibold mb-1">Files</h3>
-                        <ul className="list-disc pl-5 text-gray-700">
+                        <ul className="space-y-2">
                           {s.files.map((f) => (
-                            <li key={f.id}>
-                              {f.fileType}:{" "}
-                              <a
-                                href={f.fileUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:underline"
-                              >
-                                {f.fileName}
-                              </a>{" "}
-                              ({(f.fileSize / 1024).toFixed(1)} KB)
+                            <li
+                              key={f.id}
+                              className="p-2 bg-white rounded border flex justify-between items-center"
+                            >
+                              <div>
+                                <p className="font-medium">{f.fileName}</p>
+                                <p className="text-xs text-gray-500">
+                                  {f.fileType} •{" "}
+                                  {(f.fileSize / 1024).toFixed(1)} KB
+                                  {f.isEdited && (
+                                    <span className="ml-2 px-2 py-1 text-xs bg-green-200 text-green-700 rounded">
+                                      Edited
+                                    </span>
+                                  )}
+                                </p>
+                              </div>
+
+                              <div className="flex gap-3">
+
+                                {/* 🔥 NEW DOWNLOAD BUTTON */}
+                                <button
+                                  onClick={() => handleFileDownload(f)}
+                                  className="px-2 py-1 bg-blue-600 text-white rounded text-xs"
+                                  disabled={downloadingFileId === f.id}
+                                >
+                                  {downloadingFileId === f.id
+                                    ? "Downloading..."
+                                    : "Download"}
+                                </button>
+
+                                <label className="px-2 cursor-pointer py-1 bg-yellow-600 text-white rounded text-xs">
+  {uploadingFileId === f.id ? "Uploading..." : "Upload Edited"}
+  <input
+    type="file"
+    className="hidden"
+    disabled={uploadingFileId === f.id}
+    onChange={(e) =>
+      handleEditedFileUpload(e, s.id, f.id)
+    }
+  />
+</label>
+
+                              </div>
                             </li>
                           ))}
                         </ul>
@@ -310,7 +405,6 @@ const SubmissionsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Edit Status Modal */}
       {editing && (
         <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
           <div className="bg-white p-6 rounded-lg w-full max-w-sm shadow-lg relative">

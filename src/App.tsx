@@ -12,6 +12,10 @@ import Archive from "./pages/Archive";
 import Submission from "./pages/Submission";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
+import { useState } from "react";
+import { useEffect } from "react";
+import GlobalLayout from "./components/globallayout";
+import axios from "axios";
 
 // Admin pages
 import DashboardLayout from "./pages/admin/DashboardLayout";
@@ -44,6 +48,18 @@ import LogoManager from "./pages/admin/LogoManager";
 
 const App = () => {
   const location = useLocation();
+   const [logoUrl, setLogoUrl] = useState("/logo.png");
+   const [journalTitle, setJournalTitle] = useState("Loading...");
+    useEffect(() => {
+    const fetchLogoAndTitle = async () => {
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/logo`);
+      if (res.data?.data) {
+        setLogoUrl(res.data.data.logoUrl || "/logo.png");
+        setJournalTitle(res.data.data.name);
+      }
+    };
+    fetchLogoAndTitle();
+  }, []);
 
   // ✅ Hide Navigation & Footer for admin dashboard or login routes
   const hideLayout =
@@ -51,6 +67,7 @@ const App = () => {
     location.pathname.startsWith("/admin");
 
   return (
+    <GlobalLayout logoUrl={logoUrl} journalTitle={journalTitle}>
     <div className="min-h-screen flex flex-col">
       {!hideLayout && <Navigation />}
 
@@ -125,6 +142,7 @@ const App = () => {
         }}
       />
     </div>
+    </GlobalLayout>
   );
 };
 

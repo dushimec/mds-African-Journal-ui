@@ -6,10 +6,13 @@ import { Menu, X, Mail, Phone, Search } from "lucide-react";
 import { FaXTwitter, FaFacebook, FaLinkedin, FaInstagram } from "react-icons/fa6";
 import { toast } from "react-toastify";
 import axios from "axios";
+import { useGlobalSearch } from "./GlobalSearchContext"; 
 
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { searchQuery, setSearchQuery } = useGlobalSearch();
+  
 
   const [contactInfo, setContactInfo] = useState<{
     phone?: string;
@@ -94,23 +97,7 @@ const Navigation = () => {
     };
     fetchLogoAndTitle();
   }, []);
-
-  useEffect(() => {
-    document.title = journalTitle;
-  }, [journalTitle]);
-
-  useEffect(() => {
-    const link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
-    if (link) {
-      link.href = logoUrl;
-    } else {
-      const newLink = document.createElement("link");
-      newLink.rel = "icon";
-      newLink.href = logoUrl;
-      document.head.appendChild(newLink);
-    }
-  }, [logoUrl]);
-
+  
   return (
     <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border shadow-soft">
       {/* Top Contact + Social */}
@@ -157,7 +144,7 @@ const Navigation = () => {
           <div className="hidden md:flex items-center space-x-3">
             <div className="relative">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input type="text" placeholder="Search..." className="pl-8 w-48 md:w-64" />
+              <Input type="text" placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-8 w-48 md:w-64"/>
             </div>
             {isLoggedIn ? (
               <Button variant="default" onClick={handleLogout}>Logout</Button>
@@ -212,7 +199,7 @@ const Navigation = () => {
                 ))}
 
                 <div className="mt-4 space-y-2">
-                  <Input type="text" placeholder="Search..." />
+                  <Input type="text" placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}/>
                   {isLoggedIn ? (
                     <Button className="w-full" variant="destructive" onClick={handleLogout}>Logout</Button>
                   ) : (

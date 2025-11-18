@@ -14,7 +14,8 @@ import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 import { useState } from "react";
 import { useEffect } from "react";
-import GlobalLayout from "./components/globallayout";
+import GlobalLayout from "./components/GlobalLayout";
+import { GlobalSearchProvider } from "./components/GlobalSearchContext";
 import axios from "axios";
 
 // Admin pages
@@ -68,6 +69,7 @@ const App = () => {
 
   return (
     <GlobalLayout logoUrl={logoUrl} journalTitle={journalTitle}>
+    <GlobalSearchProvider>
     <div className="min-h-screen flex flex-col">
       {!hideLayout && <Navigation />}
 
@@ -124,7 +126,6 @@ const App = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
-
       {!hideLayout && <Footer />}
 
       {/* ✅ Toast Notifications */}
@@ -142,6 +143,7 @@ const App = () => {
         }}
       />
     </div>
+    </GlobalSearchProvider>
     </GlobalLayout>
   );
 };

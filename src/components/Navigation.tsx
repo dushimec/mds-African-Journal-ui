@@ -144,7 +144,17 @@ const Navigation = () => {
           <div className="hidden md:flex items-center space-x-3">
             <div className="relative">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input type="text" placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-8 w-48 md:w-64"/>
+              <Input
+              type="text"
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => {
+              setSearchQuery(e.target.value);
+              navigate("/search");
+              }}
+              className="pl-8 w-48 md:w-64"
+               />
+
             </div>
             {isLoggedIn ? (
               <Button variant="default" onClick={handleLogout}>Logout</Button>

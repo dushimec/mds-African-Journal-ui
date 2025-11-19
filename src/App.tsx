@@ -17,6 +17,8 @@ import { useEffect } from "react";
 import GlobalLayout from "./components/GlobalLayout";
 import { GlobalSearchProvider } from "./components/GlobalSearchContext";
 import axios from "axios";
+import SearchResults from "./pages/SearchResults";
+
 
 // Admin pages
 import DashboardLayout from "./pages/admin/DashboardLayout";
@@ -115,6 +117,8 @@ const App = () => {
           <Route path="/archive" element={<Archive />} />
           <Route path="/submission" element={<Submission />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/search" element={<SearchResults />} />
+
 
           {/* User auth */}
           <Route path="/login" element={<Auth />} />

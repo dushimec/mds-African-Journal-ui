@@ -85,7 +85,42 @@ const SubmissionsPage: React.FC = () => {
         }
       );
       const json = await res.json();
-      if (json.success && json.data) setStats(json.data);
+      if (json.success && json.data) {
+
+        if (Array.isArray(json.data)) {
+          const normalized: Stats = json.data.reduce((acc: Stats, item: any) => {
+            if (item && typeof item === "object") {
+              const key = item.status ?? item.key ?? String(item[0] ?? "");
+              const value = typeof item.count === "number" ? item.count : Number(item.count) || 0;
+              if (key) acc[key] = value;
+            }
+            return acc;
+          }, {});
+          setStats(normalized);
+        } else if (typeof json.data === "object") {
+          // Normalize object map values to numbers. Backend may return a map
+          // where each key maps to either a number or an object like {status, count}
+          const normalized: Stats = Object.entries(json.data).reduce(
+            (acc: Stats, [k, v]) => {
+              if (typeof v === "number") {
+                acc[k] = v;
+              } else if (v && typeof v === "object") {
+                // Prefer common numeric fields
+                if (typeof (v as any).count === "number") acc[k] = (v as any).count;
+                else if (typeof (v as any).total === "number") acc[k] = (v as any).total;
+                else acc[k] = Number((v as any).count ?? (v as any).total ?? 0) || 0;
+              } else {
+                acc[k] = Number(v) || 0;
+              }
+              return acc;
+            },
+            {}
+          );
+          setStats(normalized);
+        } else {
+          console.warn("Unexpected stats format:", json.data);
+        }
+      }
     } catch (err) {
       console.error("Error fetching stats:", err);
     }
@@ -207,11 +242,26 @@ const SubmissionsPage: React.FC = () => {
     setUploadingFileId(null);
   }
 };
-  const handleFileDownload = async (file: File) => {
+  const handleFileDownload = async (submissionId: string, file: File) => {
     try {
       setDownloadingFileId(file.id);
 
-      const res = await fetch(file.fileUrl);
+      // Call backend endpoint to stream/download the file
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/submission/${submissionId}/file?fileId=${encodeURIComponent(
+          file.id
+        )}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error('File download failed:', res.status, text);
+        throw new Error('Failed to download file');
+      }
+
       const blob = await res.blob();
 
       const url = window.URL.createObjectURL(blob);
@@ -344,7 +394,7 @@ const SubmissionsPage: React.FC = () => {
 
                                 {/* 🔥 NEW DOWNLOAD BUTTON */}
                                 <button
-                                  onClick={() => handleFileDownload(f)}
+                                  onClick={() => handleFileDownload(s.id, f)}
                                   className="px-2 py-1 bg-blue-600 text-white rounded text-xs"
                                   disabled={downloadingFileId === f.id}
                                 >

@@ -75,105 +75,43 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const handleDownload = async (
   submissionId: string,
-  fileIds: string[],
-  submissionTitle?: string
+  fileName?: string
 ) => {
-  if (!fileIds || fileIds.length === 0) {
-    toast.error("No files selected for download.");
+  if (!submissionId) {
+    toast.error("No submission selected for download.");
     return;
   }
+
+  // helper to extract filename from content-disposition header
+  const getFilenameFromDisposition = (disposition?: string) => {
+    if (!disposition) return null;
+    const filenameMatch = /filename\*=UTF-8''([^;\n]+)/i.exec(disposition) || /filename="?([^";\n]+)"?/i.exec(disposition);
+    return filenameMatch ? decodeURIComponent(filenameMatch[1]) : null;
+  };
 
   try {
     setDownloadingId(submissionId);
     setDownloadProgress(0);
 
-    // 1️⃣ Fetch file info from backend
-    const res = await axios.get(`${BACKEND_URL}/submission/${submissionId}/download`, {
-      params: { files: fileIds.join(",") },
+    // Call the backend endpoint: GET /submission/:fileId/file/
+    const response = await axios.get(`${BACKEND_URL}/submission/${submissionId}/file`, {
+      responseType: "blob",
+      onDownloadProgress: (progressEvent) => {
+        if (progressEvent.total) {
+          setDownloadProgress(Math.round((progressEvent.loaded * 100) / progressEvent.total));
+        }
+      },
     });
 
-    const data = res.data;
-    if (!data || (!data.fileUrl && !data.files)) {
-      toast.error("No files found.");
-      return;
-    }
+    // Try to get filename from headers, fallback to submissionTitle or fileId
+    const disposition = response.headers?.["content-disposition"] || response.headers?.["Content-Disposition"];
+    const filename = getFilenameFromDisposition(disposition) || fileName || `${submissionId}.pdf`;
 
-    // --- Single file download with progress ---
-    if (data.fileUrl) {
-      const response = await axios.get(data.fileUrl, {
-        responseType: "blob",
-        onDownloadProgress: (progressEvent) => {
-          if (progressEvent.total) {
-            setDownloadProgress(Math.round((progressEvent.loaded * 100) / progressEvent.total));
-          }
-        },
-      });
-      saveAs(response.data, fileIds[0] + ".pdf");
-      return;
-    }
-
-    // --- Multiple files download (ZIP) ---
-    const files = data.files || [];
-    const skippedFiles: string[] = data.skippedFiles || [];
-
-    if (files.length === 0) {
-      toast.error("None of the selected files could be downloaded.");
-      if (skippedFiles.length) toast.info(`Skipped: ${skippedFiles.join(", ")}`);
-      return;
-    }
-
-    const zip = new JSZip();
-    let totalBytes = 0;
-    const fileSizes: number[] = [];
-
-    // 1️⃣ First, fetch file sizes (optional for progress tracking)
-    await Promise.all(
-      files.map(async (file, idx) => {
-        try {
-          const head = await axios.head(file.url);
-          fileSizes[idx] = parseInt(head.headers["content-length"] || "0", 10);
-          totalBytes += fileSizes[idx];
-        } catch {
-          fileSizes[idx] = 0;
-          skippedFiles.push(file.fileName);
-        }
-      })
-    );
-
-    let loadedBytes = 0;
-
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      if (skippedFiles.includes(file.fileName)) continue;
-
-      try {
-        const response = await axios.get(file.url, {
-          responseType: "arraybuffer",
-          onDownloadProgress: (progressEvent) => {
-            if (progressEvent.loaded && fileSizes[i]) {
-              loadedBytes += progressEvent.loaded;
-              setDownloadProgress(Math.round((loadedBytes * 100) / totalBytes));
-            }
-          },
-        });
-        zip.file(file.fileName, response.data);
-      } catch (err: any) {
-        console.error(`❌ Failed to fetch ${file.fileName}: ${err.message}`);
-        skippedFiles.push(file.fileName);
-      }
-    }
-
-    const zipBlob = await zip.generateAsync({ type: "blob", compression: "DEFLATE" });
-    saveAs(zipBlob, `${submissionTitle || "submission-files"}.zip`);
-
-    if (skippedFiles.length) {
-      toast.info(`Skipped files: ${skippedFiles.join(", ")}`);
-    }
-
-    setDownloadProgress(100); // complete
+    saveAs(response.data, filename);
+    setDownloadProgress(100);
   } catch (err: any) {
     console.error("Download error:", err);
-    toast.error("Failed to download files. Some files might be inaccessible.");
+    toast.error("Failed to download file. It may be inaccessible.");
   } finally {
     setDownloadingId(null);
     setDownloadProgress(0);
@@ -371,10 +309,10 @@ const handleDownload = async (
                       disabled={downloadingId === article.id}
                       onClick={() => {
                         if (article.files && article.files.length > 0) {
+                          // Download the first/primary file for the submission
                           handleDownload(
                             article.id,
-                            article.files.map((f: any) => f.id),
-                            article.manuscriptTitle
+                            article.files[0].id,
                           );
                         } else {
                           toast.error("No file available for download.");

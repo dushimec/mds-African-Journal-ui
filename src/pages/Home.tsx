@@ -156,7 +156,7 @@ const handleDownload = async (
     setDownloadProgress(0);
 
     // 1️⃣ Fetch file info from backend
-    const res = await axios.get(`${backendUrl}/submission/${submissionId}/download`, {
+    const res = await axios.get(`${backendUrl}/submission/${submissionId}/file`, {
       params: { files: fileIds.join(",") },
     });
 

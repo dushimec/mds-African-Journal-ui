@@ -89,101 +89,68 @@ const Submission = () => {
     setFormData({ ...formData, authors: updatedAuthors });
   };
 
-  const handleFileUpload = async (
+  // Store selected File objects locally and attach them on final submit.
+  const handleFileUpload = (
     event: React.ChangeEvent<HTMLInputElement>,
     requirement: string
   ) => {
     if (!event.target.files || event.target.files.length === 0) return;
 
-    const token = localStorage.getItem("access_token");
-    if (!token) {
-      toast.error("You must login first!");
-      navigate("/login");
-      return;
-    }
+    const filesArray = Array.from(event.target.files).map((file) => ({
+      file,
+      requirement,
+      fileName: file.name,
+      mimeType: file.type,
+      fileSize: file.size,
+    }));
 
-    const filesArray = Array.from(event.target.files);
-    const data = new FormData();
-    filesArray.forEach((file) => data.append("files", file));
-
-    try {
-      const res = await fetch(`${API_URL}/submission/upload-multiple`, {
-        method: "POST",
-        body: data,
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      let result: any = {};
-      const contentType = res.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) result = await res.json();
-      else {
-        toast.error("File upload failed");
-        return;
-      }
-
-      if (res.ok) {
-        const uploadedFiles = result.files.map((file: any) => ({
-          ...file,
-          requirement,
-          fileUrl: file.secureUrl || file.fileUrl,
-        }));
-        setFormData((prev: any) => ({ ...prev, files: [...prev.files, ...uploadedFiles] }));
-        toast.success("File uploaded successfully");
-      } else {
-        toast.error(result.message || "File upload failed");
-      }
-    } catch (err) {
-      toast.error("Error uploading file");
-    }
+    setFormData((prev: any) => ({ ...prev, files: [...prev.files, ...filesArray] }));
+    toast.success(`${filesArray.length} file(s) added`);
   };
 
   const nextStep = () => currentStep < 4 && setCurrentStep(currentStep + 1);
   const prevStep = () => currentStep > 1 && setCurrentStep(currentStep - 1);
 
   const handleSubmit = async () => {
-    const payload = {
-      manuscriptTitle: formData.manuscriptTitle,
-      topic: formData.topic,
-      abstract: formData.abstract,
-      keywords: formData.keywords,
-      authors: formData.authors.map((a: any, i: number) => ({
-        fullName: a.fullName,
-        email: a.email,
-        affiliation: a.affiliation,
-        isCorresponding: i === 0,
-        order: i + 1,
-      })),
-      files: formData.files.map((f: any) => ({
-        fileName: f.fileName || f.original_filename || f.name,
-        fileUrl: f.secureUrl || f.fileUrl,
-        secureUrl: f.secureUrl || f.fileUrl,
-        mimeType: f.mimeType || f.type || "application/pdf",
-        fileSize: f.fileSize || f.bytes || 1000,
-        fileType:
-          f.requirement === "Manuscript File"
-            ? "MANUSCRIPT"
-            : f.requirement === "Cover Letter"
-            ? "COVER_LETTER"
-            : "ETHICS_DOCUMENTATION",
-      })),
-      declarations: [
-        { type: "ETHICAL_CONDUCT", isChecked: formData.ethics, text: "Ethics approval confirmation" },
-        { type: "CONFLICT_OF_INTEREST", isChecked: formData.conflicts, text: "Conflict of interest disclosure" },
-        { type: "COPYRIGHT_TRANSFER", isChecked: formData.copyright, text: "Copyright transfer confirmation" },
-      ],
-    };
+    // Build multipart/form-data payload expected by the backend (files under 'files')
+    const data = new FormData();
+    data.append("manuscriptTitle", formData.manuscriptTitle || "");
+    data.append("topic", formData.topic || "");
+    data.append("abstract", formData.abstract || "");
+    data.append("keywords", formData.keywords || "");
+
+    // authors and declarations as JSON strings
+    const authorsPayload = formData.authors.map((a: any, i: number) => ({
+      fullName: a.fullName,
+      email: a.email,
+      affiliation: a.affiliation,
+      isCorresponding: i === 0,
+      order: i + 1,
+    }));
+    data.append("authors", JSON.stringify(authorsPayload));
+
+    const declarations = [
+      { type: "ETHICAL_CONDUCT", isChecked: formData.ethics, text: "Ethics approval confirmation" },
+      { type: "CONFLICT_OF_INTEREST", isChecked: formData.conflicts, text: "Conflict of interest disclosure" },
+      { type: "COPYRIGHT_TRANSFER", isChecked: formData.copyright, text: "Copyright transfer confirmation" },
+    ];
+    data.append("declarations", JSON.stringify(declarations));
+
+    // Append files under the 'files' field (backend middleware expects 'files')
+    formData.files.forEach((f: any) => {
+      if (f && f.file) data.append("files", f.file, f.fileName || f.file.name);
+    });
 
     try {
       const res = await fetch(`${API_URL}/submission`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("access_token")}`,
         },
-        body: JSON.stringify(payload),
+        body: data,
       });
 
-      const result = await res.json();
+      const result = await res.json().catch(() => ({}));
       if (res.ok) {
         toast.success("Submission successful!");
         localStorage.removeItem("submission_form");
@@ -203,6 +170,7 @@ const Submission = () => {
         toast.error(result.message || "Submission failed");
       }
     } catch (err) {
+      console.error(err);
       toast.error("Error submitting manuscript");
     }
   };

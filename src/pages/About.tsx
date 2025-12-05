@@ -35,7 +35,7 @@ const About: React.FC = () => {
   const [sections, setSections] = useState<AboutSectionData[]>([]);
   const [headerTitle, setHeaderTitle] = useState("Empowering Knowledge Through Research");
   const [headerContent, setHeaderContent] = useState(
-    "MDS Journal of Applied Economics & Development (MDS-JAED)\n\nPublished by MDS Consultancy, Rwanda"
+    "Journal of Applied Economics & Development Policies (JAEDP)\n\nPublished by MDS Consultancy, Rwanda"
   );
   const [loading, setLoading] = useState(false);
 

@@ -32,7 +32,18 @@ const Submission = () => {
   // Load from localStorage
   useEffect(() => {
     const savedData = localStorage.getItem("submission_form");
-    if (savedData) setFormData(JSON.parse(savedData));
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        // ensure declaration booleans exist for older data
+        if (parsed.ethics === undefined) parsed.ethics = false;
+        if (parsed.conflicts === undefined) parsed.conflicts = false;
+        if (parsed.copyright === undefined) parsed.copyright = false;
+        setFormData(parsed);
+      } catch (e) {
+        console.error("Error parsing saved submission form:", e);
+      }
+    }
   }, []);
 
   // Save to localStorage
@@ -151,7 +162,7 @@ const Submission = () => {
       });
 
       const result = await res.json().catch(() => ({}));
-      if (res.ok) {
+        if (res.ok) {
         toast.success("Submission successful!");
         localStorage.removeItem("submission_form");
         setFormData({
@@ -424,24 +435,34 @@ const Submission = () => {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="flex flex-col gap-2">
-                      <Checkbox
-                        checked={formData.ethics}
-                        onCheckedChange={(checked) => setFormData({ ...formData, ethics: !!checked })}
-                      >
-                        I confirm that the research follows ethical guidelines.
-                      </Checkbox>
-                      <Checkbox
-                        checked={formData.conflicts}
-                        onCheckedChange={(checked) => setFormData({ ...formData, conflicts: !!checked })}
-                      >
-                        I disclose any potential conflicts of interest.
-                      </Checkbox>
-                      <Checkbox
-                        checked={formData.copyright}
-                        onCheckedChange={(checked) => setFormData({ ...formData, copyright: !!checked })}
-                      >
-                        I agree to the copyright transfer policy.
-                      </Checkbox>
+                      {(() => {
+                        const declarations = [
+                          { type: "ETHICAL_CONDUCT", isChecked: formData.ethics, text: "Ethics approval confirmation" },
+                          { type: "CONFLICT_OF_INTEREST", isChecked: formData.conflicts, text: "Conflict of interest disclosure" },
+                          { type: "COPYRIGHT_TRANSFER", isChecked: formData.copyright, text: "Copyright transfer confirmation" },
+                        ];
+
+                        return declarations.map((d: any, idx: number) => {
+                          const id = `declaration-${idx}`;
+                          return (
+                            <div key={d.type + idx} className="flex items-start gap-3">
+                              <Checkbox
+                                id={id}
+                                checked={!!d.isChecked}
+                                onCheckedChange={(checked) => {
+                                  const val = !!checked;
+                                  if (d.type === "ETHICAL_CONDUCT") setFormData({ ...formData, ethics: val });
+                                  else if (d.type === "CONFLICT_OF_INTEREST") setFormData({ ...formData, conflicts: val });
+                                  else if (d.type === "COPYRIGHT_TRANSFER") setFormData({ ...formData, copyright: val });
+                                }}
+                              />
+                              <Label htmlFor={id} className="text-sm">
+                                {d.text}
+                              </Label>
+                            </div>
+                          );
+                        });
+                      })()}
                     </div>
                   </CardContent>
                 </Card>
@@ -458,7 +479,7 @@ const Submission = () => {
               ) : (
                 <Button
                   onClick={handleSubmit}
-                  disabled={!formData.ethics || !formData.conflicts || !formData.copyright}
+                  disabled={!(formData.ethics && formData.conflicts && formData.copyright)}
                   className="order-1 sm:order-2 w-full sm:w-auto"
                 >
                   <Send className="mr-2 h-4 w-4" /> Submit Manuscript

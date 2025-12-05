@@ -36,7 +36,7 @@ const Navigation = () => {
   const navItems = [
     { name: "Home", path: "/" },
     { name: "About", path: "/about" },
-    { name: "Journal", path: "/journal" },
+    { name: "Articles", path: "/journal" },
     { name: "Editorial Board", path: "/editorial-board" },
     { name: "Author Page", path: "/author-page" },
     { name: "Archive", path: "/archive" },

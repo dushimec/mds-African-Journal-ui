@@ -300,7 +300,7 @@ const handleDownload = async (
             entrepreneurship, and development with a focus on African contexts.
           </p>
           <p className="text-xl md:text-4xl mb-8 text-gray-200 max-w-3xl mx-auto">
-            Welcome to the MDS AJournal of Applied Economics and Development
+            Welcome to the Journal of Applied Economics and Development Policies (JAEDP)
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/submission">

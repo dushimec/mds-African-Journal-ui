@@ -40,6 +40,14 @@ const Submission = () => {
         if (parsed.ethics === undefined) parsed.ethics = false;
         if (parsed.conflicts === undefined) parsed.conflicts = false;
         if (parsed.copyright === undefined) parsed.copyright = false;
+        // sanitize files: localStorage cannot restore File/Blob objects, only keep metadata
+        parsed.files = (parsed.files || []).map((f: any) => ({
+          requirement: f.requirement,
+          fileName: f.fileName,
+          mimeType: f.mimeType,
+          fileSize: f.fileSize,
+        }));
+
         setFormData(parsed);
       } catch (e) {
         console.error("Error parsing saved submission form:", e);
@@ -49,7 +57,21 @@ const Submission = () => {
 
   // Save to localStorage
   useEffect(() => {
-    localStorage.setItem("submission_form", JSON.stringify(formData));
+    try {
+      // localStorage cannot persist File/Blob objects. Save only serializable metadata for files.
+      const serializable = {
+        ...formData,
+        files: (formData.files || []).map((f: any) => ({
+          requirement: f.requirement,
+          fileName: f.fileName,
+          mimeType: f.mimeType,
+          fileSize: f.fileSize,
+        })),
+      };
+      localStorage.setItem("submission_form", JSON.stringify(serializable));
+    } catch (err) {
+      console.error("Error saving submission form:", err);
+    }
   }, [formData]);
 
   // Fetch topics from API
@@ -151,8 +173,18 @@ const Submission = () => {
     data.append("declarations", JSON.stringify(declarations));
 
     // Append files under the 'files' field (backend middleware expects 'files')
+    // Only append actual File/Blob objects. Items restored from localStorage will only contain metadata
     formData.files.forEach((f: any) => {
-      if (f && f.file) data.append("files", f.file, f.fileName || f.file.name);
+      try {
+        if (f && f.file instanceof Blob) {
+          data.append("files", f.file, f.fileName || (f.file as File).name);
+        } else {
+          // skip entries that do not have a real File/Blob (e.g. metadata restored from localStorage)
+          console.warn("Skipping non-file entry for requirement:", f?.requirement, f?.fileName);
+        }
+      } catch (e) {
+        console.warn("Error appending file for requirement", f?.requirement, e);
+      }
     });
 
     try {

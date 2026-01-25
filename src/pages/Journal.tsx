@@ -12,17 +12,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Download,
   Search,
   Filter,
   Calendar,
   User,
   Eye,
-  Loader2,
+  Download,
 } from "lucide-react";
 import { toast } from "react-toastify";
-import JSZip from "jszip";
-import { saveAs } from "file-saver";
 
 // ✅ Base URL from Vite environment variable
 const BACKEND_URL = import.meta.env.VITE_API_URL;
@@ -34,8 +31,6 @@ const Journal = () => {
   const [categories, setCategories] = useState([]);
   const [expandedId, setExpandedId] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [downloadingId, setDownloadingId] = useState<string | null>(null);
-  const [downloadProgress, setDownloadProgress] = useState(0);
 
   // ✅ Fetch articles
   useEffect(() => {
@@ -71,52 +66,10 @@ const Journal = () => {
     fetchTopics();
   }, []);
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-const handleDownload = async (
-  submissionId: string,
-  fileName?: string
-) => {
-  if (!submissionId) {
-    toast.error("No submission selected for download.");
-    return;
-  }
-
-  // helper to extract filename from content-disposition header
-  const getFilenameFromDisposition = (disposition?: string) => {
-    if (!disposition) return null;
-    const filenameMatch = /filename\*=UTF-8''([^;\n]+)/i.exec(disposition) || /filename="?([^";\n]+)"?/i.exec(disposition);
-    return filenameMatch ? decodeURIComponent(filenameMatch[1]) : null;
+  const handleViewPdf = async (submissionId: string) => {
+    window.open(`/api/article/mds/${submissionId}/pdf`, '_blank');
   };
 
-  try {
-    setDownloadingId(submissionId);
-    setDownloadProgress(0);
-
-    // Call the backend endpoint: GET /submission/:fileId/file/
-    const response = await axios.get(`${BACKEND_URL}/submission/${submissionId}/file`, {
-      responseType: "blob",
-      onDownloadProgress: (progressEvent) => {
-        if (progressEvent.total) {
-          setDownloadProgress(Math.round((progressEvent.loaded * 100) / progressEvent.total));
-        }
-      },
-    });
-
-    // Try to get filename from headers, fallback to submissionTitle or fileId
-    const disposition = response.headers?.["content-disposition"] || response.headers?.["Content-Disposition"];
-    const filename = getFilenameFromDisposition(disposition) || fileName || `${submissionId}.pdf`;
-
-    saveAs(response.data, filename);
-    setDownloadProgress(100);
-  } catch (err: any) {
-    console.error("Download error:", err);
-    toast.error("Failed to download file. It may be inaccessible.");
-  } finally {
-    setDownloadingId(null);
-    setDownloadProgress(0);
-  }
-};
 
   const filteredArticles = articles.filter((article) => {
     const title = article.manuscriptTitle?.toLowerCase() || "";
@@ -306,27 +259,10 @@ const handleDownload = async (
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={downloadingId === article.id}
-                      onClick={() => {
-                        if (article.files && article.files.length > 0) {
-                          // Download the first/primary file for the submission
-                          handleDownload(
-                            article.id,
-                            article.files[0].id,
-                          );
-                        } else {
-                          toast.error("No file available for download.");
-                        }
-                      }}
+                      onClick={() => handleViewPdf(article.id)}
                     >
-                      {downloadingId === article.id ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Download className="mr-2 h-4 w-4" />
-                      )}
-                      {downloadingId === article.id
-                        ? "Downloading..."
-                        : "Download PDF"}
+                      <Eye className="mr-2 h-4 w-4" />
+                      View Document
                     </Button>
                   </div>
                 </CardContent>

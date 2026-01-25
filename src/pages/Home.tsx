@@ -8,8 +8,6 @@ import {
   Users,
   Globe,
   ArrowRight,
-  Download,
-  Loader2,
   Megaphone,
   Award,
   TrendingUp,
@@ -19,14 +17,11 @@ import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { toast } from "react-toastify";
-import JSZip from "jszip";
-import { saveAs } from "file-saver";
 
 const Home = () => {
   const [featuredArticles, setFeaturedArticles] = useState<any[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [totalSubscribers, setTotalSubscribers] = useState(0);
   const [totalIssues, setTotalIssues] = useState(0);
   const [editorInChief, setEditorInChief] = useState<any>(null);
@@ -45,6 +40,10 @@ const Home = () => {
 
   const toggleExpand = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
+  };
+
+  const handleViewPdf = async (submissionId: string) => {
+    window.open(`api/article/mds/${submissionId}/pdf`, '_blank');
   };
 
   const fetchIssuesCount = async () => {
@@ -138,115 +137,6 @@ const Home = () => {
       toast.error("Failed to fetch announcements.");
     }
   };
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-const handleDownload = async (
-  submissionId: string,
-  fileIds: string[],
-  submissionTitle?: string
-) => {
-  if (!fileIds || fileIds.length === 0) {
-    toast.error("No files selected for download.");
-    return;
-  }
-
-  try {
-    setDownloadingId(submissionId);
-    setDownloadProgress(0);
-
-    // 1️⃣ Fetch file info from backend
-    const res = await axios.get(`${backendUrl}/submission/${submissionId}/file`, {
-      params: { files: fileIds.join(",") },
-    });
-
-    const data = res.data;
-    if (!data || (!data.fileUrl && !data.files)) {
-      toast.error("No files found.");
-      return;
-    }
-
-    // --- Single file download with progress ---
-    if (data.fileUrl) {
-      const response = await axios.get(data.fileUrl, {
-        responseType: "blob",
-        onDownloadProgress: (progressEvent) => {
-          if (progressEvent.total) {
-            setDownloadProgress(Math.round((progressEvent.loaded * 100) / progressEvent.total));
-          }
-        },
-      });
-      saveAs(response.data, fileIds[0] + ".pdf");
-      return;
-    }
-
-    // --- Multiple files download (ZIP) ---
-    const files = data.files || [];
-    const skippedFiles: string[] = data.skippedFiles || [];
-
-    if (files.length === 0) {
-      toast.error("None of the selected files could be downloaded.");
-      if (skippedFiles.length) toast.info(`Skipped: ${skippedFiles.join(", ")}`);
-      return;
-    }
-
-    const zip = new JSZip();
-    let totalBytes = 0;
-    const fileSizes: number[] = [];
-
-    // 1️⃣ First, fetch file sizes (optional for progress tracking)
-    await Promise.all(
-      files.map(async (file, idx) => {
-        try {
-          const head = await axios.head(file.url);
-          fileSizes[idx] = parseInt(head.headers["content-length"] || "0", 10);
-          totalBytes += fileSizes[idx];
-        } catch {
-          fileSizes[idx] = 0;
-          skippedFiles.push(file.fileName);
-        }
-      })
-    );
-
-    let loadedBytes = 0;
-
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      if (skippedFiles.includes(file.fileName)) continue;
-
-      try {
-        const response = await axios.get(file.url, {
-          responseType: "arraybuffer",
-          onDownloadProgress: (progressEvent) => {
-            if (progressEvent.loaded && fileSizes[i]) {
-              loadedBytes += progressEvent.loaded;
-              setDownloadProgress(Math.round((loadedBytes * 100) / totalBytes));
-            }
-          },
-        });
-        zip.file(file.fileName, response.data);
-      } catch (err: any) {
-        console.error(`❌ Failed to fetch ${file.fileName}: ${err.message}`);
-        skippedFiles.push(file.fileName);
-      }
-    }
-
-    const zipBlob = await zip.generateAsync({ type: "blob", compression: "DEFLATE" });
-    saveAs(zipBlob, `${submissionTitle || "submission-files"}.zip`);
-
-    if (skippedFiles.length) {
-      toast.info(`Skipped files: ${skippedFiles.join(", ")}`);
-    }
-
-    setDownloadProgress(100); // complete
-  } catch (err: any) {
-    console.error("Download error:", err);
-    toast.error("Failed to download files. Some files might be inaccessible.");
-  } finally {
-    setDownloadingId(null);
-    setDownloadProgress(0);
-  }
-};
 
   useEffect(() => {
     fetchArticles();
@@ -431,30 +321,10 @@ const handleDownload = async (
                       <Button
                         variant="outline"
                         size="sm"
-                        disabled={downloadingId === article.id}
-                        onClick={() => {
-                          if (article.files && article.files.length > 0) {
-                            const manuscriptFile =
-                              article.files.find(
-                                (f: any) => f.fileType === "MANUSCRIPT"
-                              ) || article.files[0];
-                            handleDownload(
-                              manuscriptFile.id,
-                              manuscriptFile.fileName
-                            );
-                          } else {
-                            toast.error("No file available for download.");
-                          }
-                        }}
+                        onClick={() => handleViewPdf(article.id)}
                       >
-                        {downloadingId === article.id ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                          <Download className="mr-2 h-4 w-4" />
-                        )}
-                        {downloadingId === article.id
-                          ? "Downloading..."
-                          : "Download PDF"}
+                        <BookOpen className="mr-2 h-4 w-4" />
+                        View PDF
                       </Button>
                     </div>
                   </Card>
@@ -620,8 +490,4 @@ const handleDownload = async (
 };
 
 export default Home;
-
-function setDownloadProgress(arg0: number) {
-  throw new Error("Function not implemented.");
-}
 

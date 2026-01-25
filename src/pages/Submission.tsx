@@ -40,13 +40,9 @@ const Submission = () => {
         if (parsed.ethics === undefined) parsed.ethics = false;
         if (parsed.conflicts === undefined) parsed.conflicts = false;
         if (parsed.copyright === undefined) parsed.copyright = false;
-        // sanitize files: localStorage cannot restore File/Blob objects, only keep metadata
-        parsed.files = (parsed.files || []).map((f: any) => ({
-          requirement: f.requirement,
-          fileName: f.fileName,
-          mimeType: f.mimeType,
-          fileSize: f.fileSize,
-        }));
+        // Do not restore files from localStorage as File objects cannot be persisted
+        // Files must be re-uploaded by the user
+        parsed.files = [];
 
         setFormData(parsed);
       } catch (e) {
@@ -58,16 +54,8 @@ const Submission = () => {
   // Save to localStorage
   useEffect(() => {
     try {
-      // localStorage cannot persist File/Blob objects. Save only serializable metadata for files.
-      const serializable = {
-        ...formData,
-        files: (formData.files || []).map((f: any) => ({
-          requirement: f.requirement,
-          fileName: f.fileName,
-          mimeType: f.mimeType,
-          fileSize: f.fileSize,
-        })),
-      };
+      // localStorage cannot persist File/Blob objects. Exclude files from persistence.
+      const { files, ...serializable } = formData;
       localStorage.setItem("submission_form", JSON.stringify(serializable));
     } catch (err) {
       console.error("Error saving submission form:", err);
@@ -148,6 +136,14 @@ const Submission = () => {
   const handleSubmit = async () => {
     // Build multipart/form-data payload expected by the backend (files under 'files')
     if (isSubmitting) return;
+
+    // Validate required files
+    const manuscriptFile = formData.files.find((f: any) => f.requirement === "Manuscript File" && f.file instanceof Blob);
+    if (!manuscriptFile) {
+      toast.error("Manuscript File is required. Please upload it before submitting.");
+      return;
+    }
+
     setIsSubmitting(true);
     const data = new FormData();
     data.append("manuscriptTitle", formData.manuscriptTitle || "");

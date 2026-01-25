@@ -43,7 +43,7 @@ const Home = () => {
   };
 
   const handleViewPdf = async (submissionId: string) => {
-    window.open(`api/article/mds/${submissionId}/pdf`, '_blank');
+    window.open(`${backendUrl}/article/mds/${submissionId}/pdf`, '_blank');
   };
 
   const fetchIssuesCount = async () => {

@@ -67,7 +67,7 @@ const Journal = () => {
   }, []);
 
   const handleViewPdf = async (submissionId: string) => {
-    window.open(`/api/article/mds/${submissionId}/pdf`, '_blank');
+    window.open(`${BACKEND_URL}/article/mds/${submissionId}/pdf`, '_blank');
   };
 
 

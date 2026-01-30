@@ -42,8 +42,26 @@ const Home = () => {
     setExpandedId(expandedId === id ? null : id);
   };
 
-  const handleViewPdf = async (submissionId: string) => {
-    window.open(`${backendUrl}/article/mds/${submissionId}/pdf`, '_blank');
+  // Generate PDF URL using /:volume/:issue/:slug.pdf endpoint
+  const getPdfUrl = (article: any) => {
+    // Primary: use volume/issue/seoPdfName format /:volume/:issue/:slug.pdf
+    if (article.volume && article.issue && article.seoPdfName) {
+      return `/${article.volume}/${article.issue}/${article.seoPdfName}`;
+    }
+    // Fallback: use doiSlug if available
+    if (article.doiSlug) {
+      return `/article-pdf/${encodeURIComponent(article.doiSlug)}/url`;
+    }
+    return null;
+  };
+
+  const handleViewPdf = async (article: any) => {
+    const pdfUrl = getPdfUrl(article);
+    if (pdfUrl) {
+      window.open(pdfUrl, '_blank');
+    } else {
+      toast.error('PDF not available for this article');
+    }
   };
 
   const fetchIssuesCount = async () => {
@@ -321,7 +339,7 @@ const Home = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleViewPdf(article.id)}
+                        onClick={() => handleViewPdf(article)}
                       >
                         <BookOpen className="mr-2 h-4 w-4" />
                         View PDF

@@ -1,5 +1,17 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/:volume/:issue/:slug.pdf",
+      "destination": "https://api.jaedp.org/api/v1/:volume/:issue/:slug.pdf"
+    },
+    {
+      "source": "/article-pdf/:doiSlug/url",
+      "destination": "https://api.jaedp.org/api/v1/article-pdf/:doiSlug/url"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ]
 }
+

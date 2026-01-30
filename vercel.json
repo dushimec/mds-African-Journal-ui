@@ -1,8 +1,8 @@
 {
   "rewrites": [
     {
-      "source": "/:volume/:issue/:slug*.pdf",
-      "destination": "https://api.jaedp.org/api/v1/:volume/:issue/:slug.pdf"
+      "source": "/VOLUME/:volume/ISSUE/:issue/:slug*.pdf",
+      "destination": "https://api.jaedp.org/api/v1/VOLUME/:volume/ISSUE/:issue/:slug.pdf"
     },
     {
       "source": "/article-pdf/:doiSlug/url",

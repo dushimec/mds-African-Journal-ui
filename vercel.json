@@ -1,12 +1,12 @@
 {
   "rewrites": [
     {
-      "source": "/VOLUME/:volume/ISSUE/:issue/:slug*.pdf",
-      "destination": "https://api.jaedp.org/api/v1/VOLUME/:volume/ISSUE/:issue/:slug.pdf"
+      "source": "/VOLUME/:volume/ISSUE/:issue/:slug",
+      "destination": "https://api.jaedp.org/api/v1/VOLUME/:volume/ISSUE/:issue/:slug"
     },
     {
-      "source": "/article-pdf/:doiSlug/url",
-      "destination": "https://api.jaedp.org/api/v1/article-pdf/:doiSlug/url"
+      "source": "/VOLUME/:volume/ISSUE/:issue/:slug*.pdf",
+      "destination": "https://api.jaedp.org/api/v1/VOLUME/:volume/ISSUE/:issue/:slug.pdf"
     },
     {
       "source": "/(.*)",
@@ -14,3 +14,4 @@
     }
   ]
 }
+

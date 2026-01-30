@@ -28,7 +28,7 @@ const BACKEND_URL = import.meta.env.VITE_API_URL;
 const getPdfUrl = (article: any) => {
   // Primary: use volume/issue/seoPdfName format /:volume/:issue/:slug.pdf
   if (article.volume && article.issue && article.seoPdfName) {
-    return `/${article.volume}/${article.issue}/${article.seoPdfName}`;
+    return `${BACKEND_URL}/VOLUME/${article.volume}/ISSUE/${article.issue}/${article.seoPdfName}.pdf`;
   }
   // Fallback: use doiSlug if available
   if (article.doiSlug) {

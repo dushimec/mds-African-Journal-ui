@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Eye, EyeOff, Edit3, Trash2, X } from "lucide-react";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
@@ -60,6 +60,7 @@ const SubmissionsPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [downloadingFileId, setDownloadingFileId] = useState<string | null>(null);
   const [uploadingFileId, setUploadingFileId] = useState<string | null>(null);
+  const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
 
   const token = localStorage.getItem("access_token");
@@ -240,6 +241,10 @@ const SubmissionsPage: React.FC = () => {
     toast.error("Error uploading file.");
   } finally {
     setUploadingFileId(null);
+    // Reset the file input value to allow re-uploading the same file
+    if (fileInputRefs.current[fileId]) {
+      fileInputRefs.current[fileId]!.value = "";
+    }
   }
 };
   const handleFileDownload = async (submissionId: string, file: File) => {
@@ -404,16 +409,17 @@ const SubmissionsPage: React.FC = () => {
                                 </button>
 
                                 <label className="px-2 cursor-pointer py-1 bg-yellow-600 text-white rounded text-xs">
-  {uploadingFileId === f.id ? "Uploading..." : "Upload Edited"}
-  <input
-    type="file"
-    className="hidden"
-    disabled={uploadingFileId === f.id}
-    onChange={(e) =>
-      handleEditedFileUpload(e, s.id, f.id)
-    }
-  />
-</label>
+                                  {uploadingFileId === f.id ? "Uploading..." : "Upload Edited"}
+                                  <input
+                                    ref={(el) => (fileInputRefs.current[f.id] = el)}
+                                    type="file"
+                                    className="hidden"
+                                    disabled={uploadingFileId === f.id}
+                                    onChange={(e) =>
+                                      handleEditedFileUpload(e, s.id, f.id)
+                                    }
+                                  />
+                                </label>
 
                               </div>
                             </li>

@@ -2,16 +2,55 @@
   "rewrites": [
     {
       "source": "/vol:volume/issue:issue/:slug",
-      "destination": "https://api.jaedp.org/api/v1/vol:volume/issue:issue/:slug"
+      "destination": "/index.html"
     },
     {
-      "source": "/vol:volume/issue:issue/:slug*.pdf",
-                "destination": "https://api.jaedp.org/api/v1/vol:volume/issue:issue/:slug.pdf"
-              },
+      "source": "/vol:volume/issue:issue/:slug.pdf",
+      "destination": "https://api.jaedp.org/api/v1/vol:volume/issue:issue/:slug.pdf"
+    },
+    {
+      "source": "/vol:volume/issue:issue/:slug/citation",
+      "destination": "https://api.jaedp.org/api/v1/vol:volume/issue:issue/:slug/citation"
+    },
+    {
+      "source": "/vol:volume/issue:issue/:slug/citation/bibtex",
+      "destination": "https://api.jaedp.org/api/v1/vol:volume/issue:issue/:slug/citation/bibtex"
+    },
+    {
+      "source": "/vol:volume/issue:issue/:slug/citation/ris",
+      "destination": "https://api.jaedp.org/api/v1/vol:volume/issue:issue/:slug/citation/ris"
+    },
+    {
+      "source": "/api/submission/vol:volume/issue:issue/:slug",
+      "destination": "https://api.jaedp.org/api/v1/submission/vol:volume/issue:issue/:slug"
+    },
     {
       "source": "/(.*)",
       "destination": "/index.html"
     }
+  ],
+  "headers": [
+    {
+      "source": "/vol:volume/issue:issue/:slug.pdf",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "index, follow"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000"
+        }
+      ]
+    },
+    {
+      "source": "/vol:volume/issue:issue/:slug",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "index, follow"
+        }
+      ]
+    }
   ]
 }
-

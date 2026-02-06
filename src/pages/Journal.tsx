@@ -80,12 +80,21 @@ const Journal = () => {
   }, []);
 
   const handleViewPdf = async (article: any) => {
-    const pdfUrl = getPdfUrl(article);
-    if (pdfUrl) {
-      window.open(pdfUrl, '_blank');
-    } else {
-      toast.error('PDF not available for this article');
+    // Open article landing page first (SEO-optimized)
+    const landingPageUrl = `/vol${article.volume}/issue${article.issue}/${article.seoPdfName}`;
+    
+    // Track the view event
+    try {
+      await axios.post(`${BACKEND_URL}/analytics/pdf-view`, {
+        submissionId: article.id,
+        source: 'journal_page'
+      });
+    } catch (e) {
+      // Ignore analytics errors
     }
+    
+    // Open landing page
+    window.open(landingPageUrl, '_blank');
   };
 
 

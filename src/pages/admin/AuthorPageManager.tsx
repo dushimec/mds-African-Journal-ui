@@ -26,9 +26,9 @@ const AuthorPageManager = () => {
   const [formData, setFormData] = useState({
     title: "",
     tagline: "",
-    submissionStepsJson: "",
-    articleTypesJson: "",
-    guidelinesJson: "",
+    submissionSteps: [] as any[],
+    articleTypes: [] as any[],
+    guidelines: [] as any[],
   });
   const [loading, setLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -49,9 +49,9 @@ const AuthorPageManager = () => {
       setFormData({
         title: data.title,
         tagline: data.tagline,
-        submissionStepsJson: JSON.stringify(data.submissionSteps, null, 2),
-        articleTypesJson: JSON.stringify(data.articleTypes, null, 2),
-        guidelinesJson: JSON.stringify(data.guidelines, null, 2),
+        submissionSteps: data.submissionSteps || [],
+        articleTypes: data.articleTypes || [],
+        guidelines: data.guidelines || [],
       });
     } catch (error: any) {
       console.error("Error fetching author page content:", error);
@@ -75,26 +75,15 @@ const AuthorPageManager = () => {
         return;
       }
 
-      // Validate JSON
-      let submissionSteps, articleTypes, guidelines;
-      try {
-        submissionSteps = formData.submissionStepsJson ? JSON.parse(formData.submissionStepsJson) : [];
-        articleTypes = formData.articleTypesJson ? JSON.parse(formData.articleTypesJson) : [];
-        guidelines = formData.guidelinesJson ? JSON.parse(formData.guidelinesJson) : [];
-      } catch (e) {
-        toast.error("Invalid JSON format in one or more sections");
-        return;
-      }
-
       setIsSaving(true);
       const response = await axios.patch(
         `${API_URL}/author-page`,
         {
           title: formData.title,
           tagline: formData.tagline,
-          submissionSteps,
-          articleTypes,
-          guidelines,
+          submissionSteps: formData.submissionSteps,
+          articleTypes: formData.articleTypes,
+          guidelines: formData.guidelines,
         },
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -107,9 +96,9 @@ const AuthorPageManager = () => {
         setFormData({
           title: response.data.data.title,
           tagline: response.data.data.tagline,
-          submissionStepsJson: JSON.stringify(response.data.data.submissionSteps, null, 2),
-          articleTypesJson: JSON.stringify(response.data.data.articleTypes, null, 2),
-          guidelinesJson: JSON.stringify(response.data.data.guidelines, null, 2),
+          submissionSteps: response.data.data.submissionSteps,
+          articleTypes: response.data.data.articleTypes,
+          guidelines: response.data.data.guidelines,
         });
       }
     } catch (error: any) {
@@ -175,55 +164,303 @@ const AuthorPageManager = () => {
 
             {/* Submission Steps Tab */}
             <TabsContent value="steps" className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="stepsJson">Submission Steps (JSON)</Label>
-                <Textarea
-                  id="stepsJson"
-                  value={formData.submissionStepsJson}
-                  onChange={(e) => setFormData({ ...formData, submissionStepsJson: e.target.value })}
-                  placeholder="Enter submission steps as JSON"
-                  className="min-h-[400px] font-mono text-sm"
+              <div className="space-y-4">
+                {formData.submissionSteps.map((step, index) => (
+                  <Card key={index} className="p-4">
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label>Step Number</Label>
+                          <Input
+                            type="number"
+                            value={step.step || index + 1}
+                            onChange={(e) => {
+                              const updated = [...formData.submissionSteps];
+                              updated[index].step = parseInt(e.target.value);
+                              setFormData({ ...formData, submissionSteps: updated });
+                            }}
+                            disabled={isSaving}
+                          />
+                        </div>
+                        <div>
+                          <Label>Icon</Label>
+                          <Input
+                            value={step.icon || ""}
+                            onChange={(e) => {
+                              const updated = [...formData.submissionSteps];
+                              updated[index].icon = e.target.value;
+                              setFormData({ ...formData, submissionSteps: updated });
+                            }}
+                            placeholder="e.g., FileText, Send, CheckCircle"
+                            disabled={isSaving}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label>Title</Label>
+                        <Input
+                          value={step.title || ""}
+                          onChange={(e) => {
+                            const updated = [...formData.submissionSteps];
+                            updated[index].title = e.target.value;
+                            setFormData({ ...formData, submissionSteps: updated });
+                          }}
+                          disabled={isSaving}
+                        />
+                      </div>
+                      <div>
+                        <Label>Description</Label>
+                        <Textarea
+                          value={step.description || ""}
+                          onChange={(e) => {
+                            const updated = [...formData.submissionSteps];
+                            updated[index].description = e.target.value;
+                            setFormData({ ...formData, submissionSteps: updated });
+                          }}
+                          className="min-h-[80px]"
+                          disabled={isSaving}
+                        />
+                      </div>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => {
+                          const updated = formData.submissionSteps.filter((_, i) => i !== index);
+                          setFormData({ ...formData, submissionSteps: updated });
+                        }}
+                        disabled={isSaving}
+                      >
+                        Remove Step
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+                <Button
+                  onClick={() => {
+                    setFormData({
+                      ...formData,
+                      submissionSteps: [
+                        ...formData.submissionSteps,
+                        { step: formData.submissionSteps.length + 1, title: "", description: "", icon: "" },
+                      ],
+                    });
+                  }}
                   disabled={isSaving}
-                />
-                <p className="text-xs text-gray-500">
-                  Edit the JSON array for submission steps. Each step should have: step (number), title, description, and icon (string).
-                </p>
+                >
+                  Add Submission Step
+                </Button>
               </div>
             </TabsContent>
 
             {/* Article Types Tab */}
             <TabsContent value="types" className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="typesJson">Article Types (JSON)</Label>
-                <Textarea
-                  id="typesJson"
-                  value={formData.articleTypesJson}
-                  onChange={(e) => setFormData({ ...formData, articleTypesJson: e.target.value })}
-                  placeholder="Enter article types as JSON"
-                  className="min-h-[400px] font-mono text-sm"
+              <div className="space-y-4">
+                {formData.articleTypes.map((type, index) => (
+                  <Card key={index} className="p-4">
+                    <div className="space-y-3">
+                      <div>
+                        <Label>Type Name</Label>
+                        <Input
+                          value={type.type || ""}
+                          onChange={(e) => {
+                            const updated = [...formData.articleTypes];
+                            updated[index].type = e.target.value;
+                            setFormData({ ...formData, articleTypes: updated });
+                          }}
+                          disabled={isSaving}
+                        />
+                      </div>
+                      <div>
+                        <Label>Description</Label>
+                        <Textarea
+                          value={type.description || ""}
+                          onChange={(e) => {
+                            const updated = [...formData.articleTypes];
+                            updated[index].description = e.target.value;
+                            setFormData({ ...formData, articleTypes: updated });
+                          }}
+                          className="min-h-[80px]"
+                          disabled={isSaving}
+                        />
+                      </div>
+                      {type.description2 && (
+                        <div>
+                          <Label>Additional Description</Label>
+                          <Textarea
+                            value={type.description2 || ""}
+                            onChange={(e) => {
+                              const updated = [...formData.articleTypes];
+                              updated[index].description2 = e.target.value;
+                              setFormData({ ...formData, articleTypes: updated });
+                            }}
+                            className="min-h-[80px]"
+                            disabled={isSaving}
+                          />
+                        </div>
+                      )}
+                      <div className="space-y-2">
+                        <Label>Items</Label>
+                        {(type.items || []).map((item, itemIndex) => (
+                          <div key={itemIndex} className="flex gap-2">
+                            <Input
+                              value={item}
+                              onChange={(e) => {
+                                const updated = [...formData.articleTypes];
+                                updated[index].items[itemIndex] = e.target.value;
+                                setFormData({ ...formData, articleTypes: updated });
+                              }}
+                              placeholder="Enter item"
+                              disabled={isSaving}
+                            />
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const updated = [...formData.articleTypes];
+                                updated[index].items = updated[index].items.filter((_: any, i: number) => i !== itemIndex);
+                                setFormData({ ...formData, articleTypes: updated });
+                              }}
+                              disabled={isSaving}
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        ))}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const updated = [...formData.articleTypes];
+                            if (!updated[index].items) updated[index].items = [];
+                            updated[index].items.push("");
+                            setFormData({ ...formData, articleTypes: updated });
+                          }}
+                          disabled={isSaving}
+                        >
+                          Add Item
+                        </Button>
+                      </div>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => {
+                          const updated = formData.articleTypes.filter((_, i) => i !== index);
+                          setFormData({ ...formData, articleTypes: updated });
+                        }}
+                        disabled={isSaving}
+                      >
+                        Remove Type
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+                <Button
+                  onClick={() => {
+                    setFormData({
+                      ...formData,
+                      articleTypes: [
+                        ...formData.articleTypes,
+                        { type: "", description: "", items: [] },
+                      ],
+                    });
+                  }}
                   disabled={isSaving}
-                />
-                <p className="text-xs text-gray-500">
-                  Edit the JSON array for article types. Each type should have: type, description, items (array), and optional description2.
-                </p>
+                >
+                  Add Article Type
+                </Button>
               </div>
             </TabsContent>
 
             {/* Guidelines Tab */}
             <TabsContent value="guidelines" className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="guidelinesJson">Guidelines (JSON)</Label>
-                <Textarea
-                  id="guidelinesJson"
-                  value={formData.guidelinesJson}
-                  onChange={(e) => setFormData({ ...formData, guidelinesJson: e.target.value })}
-                  placeholder="Enter guidelines as JSON"
-                  className="min-h-[400px] font-mono text-sm"
+              <div className="space-y-4">
+                {formData.guidelines.map((guideline, index) => (
+                  <Card key={index} className="p-4">
+                    <div className="space-y-3">
+                      <div>
+                        <Label>Category</Label>
+                        <Input
+                          value={guideline.category || ""}
+                          onChange={(e) => {
+                            const updated = [...formData.guidelines];
+                            updated[index].category = e.target.value;
+                            setFormData({ ...formData, guidelines: updated });
+                          }}
+                          placeholder="e.g., Format, Structure, Citation"
+                          disabled={isSaving}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Items</Label>
+                        {(guideline.items || []).map((item, itemIndex) => (
+                          <div key={itemIndex} className="flex gap-2">
+                            <Textarea
+                              value={item}
+                              onChange={(e) => {
+                                const updated = [...formData.guidelines];
+                                updated[index].items[itemIndex] = e.target.value;
+                                setFormData({ ...formData, guidelines: updated });
+                              }}
+                              placeholder="Enter guideline item"
+                              className="min-h-[50px]"
+                              disabled={isSaving}
+                            />
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const updated = [...formData.guidelines];
+                                updated[index].items = updated[index].items.filter((_: any, i: number) => i !== itemIndex);
+                                setFormData({ ...formData, guidelines: updated });
+                              }}
+                              disabled={isSaving}
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        ))}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const updated = [...formData.guidelines];
+                            if (!updated[index].items) updated[index].items = [];
+                            updated[index].items.push("");
+                            setFormData({ ...formData, guidelines: updated });
+                          }}
+                          disabled={isSaving}
+                        >
+                          Add Item
+                        </Button>
+                      </div>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => {
+                          const updated = formData.guidelines.filter((_, i) => i !== index);
+                          setFormData({ ...formData, guidelines: updated });
+                        }}
+                        disabled={isSaving}
+                      >
+                        Remove Category
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+                <Button
+                  onClick={() => {
+                    setFormData({
+                      ...formData,
+                      guidelines: [
+                        ...formData.guidelines,
+                        { category: "", items: [] },
+                      ],
+                    });
+                  }}
                   disabled={isSaving}
-                />
-                <p className="text-xs text-gray-500">
-                  Edit the JSON array for guidelines. Each guideline should have: category and items (array of strings).
-                </p>
+                >
+                  Add Guideline Category
+                </Button>
               </div>
             </TabsContent>
           </Tabs>

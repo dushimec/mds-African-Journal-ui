@@ -111,6 +111,13 @@ const Submission = () => {
     setFormData({ ...formData, authors: updatedAuthors });
   };
 
+  // Allowed file types for each requirement
+  const allowedFileTypes: Record<string, string[]> = {
+    "Manuscript File": [".pdf", ".doc", ".docx"],
+    "Cover Letter": [".pdf", ".doc", ".docx"],
+    "Ethics Documentation": [".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png"],
+  };
+
   // Store selected File objects locally and attach them on final submit.
   const handleFileUpload = (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -118,13 +125,35 @@ const Submission = () => {
   ) => {
     if (!event.target.files || event.target.files.length === 0) return;
 
-    const filesArray = Array.from(event.target.files).map((file) => ({
-      file,
-      requirement,
-      fileName: file.name,
-      mimeType: file.type,
-      fileSize: file.size,
-    }));
+    const allowedTypes = allowedFileTypes[requirement] || [];
+    const maxSizeInBytes = 10 * 1024 * 1024; // 10MB max file size
+
+    const filesArray = Array.from(event.target.files)
+      .map((file) => {
+        // Validate file extension
+        const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf("."));
+        if (allowedTypes.length > 0 && !allowedTypes.includes(fileExtension)) {
+          toast.error(`Invalid file type for ${requirement}. Allowed types: ${allowedTypes.join(", ")}`);
+          return null;
+        }
+
+        // Validate file size
+        if (file.size > maxSizeInBytes) {
+          toast.error(`File ${file.name} exceeds the maximum size of 10MB.`);
+          return null;
+        }
+
+        return {
+          file,
+          requirement,
+          fileName: file.name,
+          mimeType: file.type,
+          fileSize: file.size,
+        };
+      })
+      .filter((f): f is NonNullable<typeof f> => f !== null);
+
+    if (filesArray.length === 0) return;
 
     setFormData((prev: any) => ({ ...prev, files: [...prev.files, ...filesArray] }));
     toast.success(`${filesArray.length} file(s) added`);
@@ -133,29 +162,100 @@ const Submission = () => {
   const nextStep = () => currentStep < 4 && setCurrentStep(currentStep + 1);
   const prevStep = () => currentStep > 1 && setCurrentStep(currentStep - 1);
 
-  const handleSubmit = async () => {
-    // Build multipart/form-data payload expected by the backend (files under 'files')
-    if (isSubmitting) return;
+  // Validation helper function
+  const validateForm = (): string | null => {
+    // Validate manuscript title
+    if (!formData.manuscriptTitle || formData.manuscriptTitle.trim() === "") {
+      return "Manuscript title is required. Please enter a title for your manuscript.";
+    }
+
+    // Validate topic
+    if (!formData.topic || formData.topic.trim() === "") {
+      return "Research topic is required. Please select a topic for your manuscript.";
+    }
+
+    // Validate abstract
+    if (!formData.abstract || formData.abstract.trim() === "") {
+      return "Abstract is required. Please provide an abstract for your manuscript.";
+    }
+
+    // Validate keywords
+    if (!formData.keywords || formData.keywords.trim() === "") {
+      return "Keywords are required. Please enter keywords for your manuscript.";
+    }
+
+    // Validate authors
+    if (!formData.authors || formData.authors.length === 0) {
+      return "At least one author is required. Please add author information.";
+    }
+
+    for (let i = 0; i < formData.authors.length; i++) {
+      const author = formData.authors[i];
+      if (!author.fullName || author.fullName.trim() === "") {
+        return `Author ${i + 1}: Full name is required.`;
+      }
+      if (!author.email || author.email.trim() === "") {
+        return `Author ${i + 1}: Email is required.`;
+      }
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (author.email && !emailRegex.test(author.email)) {
+        return `Author ${i + 1}: Please enter a valid email address.`;
+      }
+    }
 
     // Validate required files
     const manuscriptFile = formData.files.find((f: any) => f.requirement === "Manuscript File" && f.file instanceof Blob);
     if (!manuscriptFile) {
-      toast.error("Manuscript File is required. Please upload it before submitting.");
+      return "Manuscript File is required. Please upload it before submitting.";
+    }
+
+    const coverLetterFile = formData.files.find((f: any) => f.requirement === "Cover Letter" && f.file instanceof Blob);
+    if (!coverLetterFile) {
+      return "Cover Letter is required. Please upload it before submitting.";
+    }
+
+    return null;
+  };
+
+  const handleSubmit = async () => {
+    if (isSubmitting) return;
+
+    // Check for access token
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      console.error("No access token found in localStorage");
+      toast.error("Your session has expired. Please log in again.");
+      navigate("/login");
+      return;
+    }
+
+    // Validate all required fields
+    const validationError = validateForm();
+    if (validationError) {
+      console.warn("Form validation failed:", validationError);
+      toast.error(validationError);
+      return;
+    }
+
+    // Validate declarations
+    if (!formData.ethics || !formData.conflicts || !formData.copyright) {
+      toast.error("Please accept all declarations before submitting.");
       return;
     }
 
     setIsSubmitting(true);
     const data = new FormData();
-    data.append("manuscriptTitle", formData.manuscriptTitle || "");
-    data.append("topic", formData.topic || "");
-    data.append("abstract", formData.abstract || "");
-    data.append("keywords", formData.keywords || "");
+    data.append("manuscriptTitle", formData.manuscriptTitle.trim());
+    data.append("topic", formData.topic.trim());
+    data.append("abstract", formData.abstract.trim());
+    data.append("keywords", formData.keywords.trim());
 
     // authors and declarations as JSON strings
     const authorsPayload = formData.authors.map((a: any, i: number) => ({
-      fullName: a.fullName,
-      email: a.email,
-      affiliation: a.affiliation,
+      fullName: a.fullName.trim(),
+      email: a.email.trim(),
+      affiliation: a.affiliation.trim(),
       isCorresponding: i === 0,
       order: i + 1,
     }));
@@ -184,19 +284,31 @@ const Submission = () => {
     });
 
     try {
+      console.log("Submitting manuscript to:", `${API_URL}/submission`);
+      console.log("FormData entries:", Array.from(data.entries()).map(([key]) => key));
+
       const res = await fetch(`${API_URL}/submission`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+          Authorization: `Bearer ${token}`,
         },
         body: data,
       });
 
-      const result = await res.json().catch(() => ({}));
-        if (res.ok) {
-        toast.success("Submission successful!");
+      let result: any = {};
+      try {
+        result = await res.json();
+      } catch (parseErr) {
+        console.error("Failed to parse response:", parseErr);
+      }
+
+      if (res.ok && result.success) {
+        console.log("Submission successful:", result);
+        toast.success("Manuscript submitted successfully! Our team will review it soon.");
+        
+        // Clear localStorage and reset form completely
         localStorage.removeItem("submission_form");
-        setFormData({
+        const emptyForm = {
           manuscriptTitle: "",
           topic: "",
           abstract: "",
@@ -206,14 +318,24 @@ const Submission = () => {
           ethics: false,
           conflicts: false,
           copyright: false,
-        });
+        };
+        setFormData(emptyForm);
         setCurrentStep(1);
+        
+        // Redirect to home after a short delay
+        setTimeout(() => {
+          navigate("/");
+        }, 2000);
       } else {
-        toast.error(result.message || "Submission failed");
+        // Provide more specific error messages based on response
+        const errorMessage = result.message || result.error || result.data?.message || "Submission failed. Please try again.";
+        console.error("Submission failed with status:", res.status, "Response:", result);
+        toast.error(`Error: ${errorMessage}`);
       }
-    } catch (err) {
-      console.error(err);
-      toast.error("Error submitting manuscript");
+    } catch (err: any) {
+      console.error("Network or unexpected error during submission:", err);
+      const errorMsg = err?.message || "Unable to connect to the server.";
+      toast.error(`Connection error: ${errorMsg} Please check your internet connection and try again.`);
     } finally {
       setIsSubmitting(false);
     }

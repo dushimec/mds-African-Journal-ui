@@ -36,6 +36,9 @@ import IssueManager from "./pages/admin/IssueManager";
 import ContactInfoManager from "./pages/admin/ContactInfoManager";
 import AdminRoute from "./pages/admin/AdminRouteProtect";
 import Announcements from "./pages/admin/Announcements";
+import AuthorDashboard from "./pages/admin/AuthorDashboard";
+import AuthorContentManagement from "./pages/admin/AuthorContentManagement";
+import AuthorPageManager from "./pages/admin/AuthorPageManager";
 
 
 // Auth pages
@@ -44,6 +47,7 @@ import Verify2FA from "./pages/Verify2FA";
 import VerifyEmail from "./pages/VerifyEmail";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import ArticleDetail from "./pages/ArticleDetail";
 
 // New admin login page
 import AdminLogin from "./pages/admin/AdminLogin"; // ✅ Create this for admin auth
@@ -100,6 +104,9 @@ const App = () => {
             <Route path="contact-info" element={<ContactInfoManager />} />
             <Route path="manage-logo"  element={<LogoManager/>}   />
             <Route path="announcements" element={<Announcements/>}/>
+            <Route path="authors" element={<AuthorDashboard/>}/>
+            <Route path="author-content" element={<AuthorContentManagement/>}/>
+            <Route path="author-page" element={<AuthorPageManager/>}/>
           </Route>
 
           {/* ✅ Admin auth routes */}
@@ -112,6 +119,7 @@ const App = () => {
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
           <Route path="/journal" element={<Journal />} />
+          <Route path="/article/:id" element={<ArticleDetail />} />
           <Route path="/editorial-board" element={<EditorialBoard />} />
           <Route path="/author-page" element={<AuthorPage />} />
           <Route path="/archive" element={<Archive />} />

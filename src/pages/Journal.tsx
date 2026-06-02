@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ const getPdfUrl = (article: any) => {
 };
 
 const Journal = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [articles, setArticles] = useState([]);
@@ -200,7 +202,9 @@ const Journal = () => {
                           {new Date(article.createdAt).toDateString()}
                         </div>
                       </div>
-                      <CardTitle className="font-heading text-xl md:text-2xl mb-2">
+                      <CardTitle className="font-heading text-xl md:text-2xl mb-2 cursor-pointer hover:text-primary transition-colors"
+                        onClick={() => navigate(`/article/${article.id}`)}
+                      >
                         {article.manuscriptTitle || "Untitled Article"}
                       </CardTitle>
                       <div className="flex items-center text-muted-foreground mb-2">

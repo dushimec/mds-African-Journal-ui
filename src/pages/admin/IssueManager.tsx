@@ -4,21 +4,17 @@ import Swal from "sweetalert2";
 import { Pencil, Trash2 } from "lucide-react";
 
 interface Issue {
-  id?: number;
-  issueNumber: number;
+  id?: string;
+  volume: number;
+  issue: number;
   year: number;
-  month: number;
-  title: string;
-  isSpecial: boolean;
 }
 
 export default function IssueManager() {
   const [formData, setFormData] = useState<Issue>({
-    issueNumber: 0,
+    volume: 1,
+    issue: 1,
     year: new Date().getFullYear(),
-    month: new Date().getMonth() + 1,
-    title: "",
-    isSpecial: false,
   });
 
   const [issues, setIssues] = useState<Issue[]>([]);
@@ -76,11 +72,9 @@ export default function IssueManager() {
       }
 
       setFormData({
-        issueNumber: 0,
+        volume: 1,
+        issue: 1,
         year: new Date().getFullYear(),
-        month: 1,
-        title: "",
-        isSpecial: false,
       });
       setEditId(null);
       fetchIssues();
@@ -133,56 +127,45 @@ export default function IssueManager() {
         className="space-y-4 bg-white p-4 rounded-xl shadow"
       >
         <div className="grid grid-cols-2 gap-4">
-          <input
-            type="number"
-            placeholder="Issue Number"
-            value={formData.issueNumber}
-            onChange={(e) =>
-              setFormData({ ...formData, issueNumber: Number(e.target.value) })
-            }
-            className="border p-2 rounded"
-            required
-          />
-          <input
-            type="number"
-            placeholder="Year"
-            value={formData.year}
-            onChange={(e) =>
-              setFormData({ ...formData, year: Number(e.target.value) })
-            }
-            className="border p-2 rounded"
-            required
-          />
-          <input
-            type="number"
-            placeholder="Month"
-            value={formData.month}
-            onChange={(e) =>
-              setFormData({ ...formData, month: Number(e.target.value) })
-            }
-            className="border p-2 rounded"
-            required
-          />
-          <input
-            type="text"
-            placeholder="Title"
-            value={formData.title}
-            onChange={(e) =>
-              setFormData({ ...formData, title: e.target.value })
-            }
-            className="border p-2 rounded col-span-2"
-            required
-          />
-          <label className="flex items-center space-x-2 col-span-2">
+          <div>
+            <label className="block text-sm font-medium mb-1">Volume</label>
             <input
-              type="checkbox"
-              checked={formData.isSpecial}
+              type="number"
+              placeholder="Enter volume"
+              value={formData.volume}
               onChange={(e) =>
-                setFormData({ ...formData, isSpecial: e.target.checked })
+                setFormData({ ...formData, volume: Number(e.target.value) })
               }
+              className="border p-2 rounded w-full"
+              required
             />
-            <span>Is Special Issue</span>
-          </label>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Issue</label>
+            <input
+              type="number"
+              placeholder="Enter issue number"
+              value={formData.issue}
+              onChange={(e) =>
+                setFormData({ ...formData, issue: Number(e.target.value) })
+              }
+              className="border p-2 rounded w-full"
+              required
+            />
+          </div>
+          <div className="col-span-2">
+            <label className="block text-sm font-medium mb-1">Year</label>
+            <input
+              type="number"
+              placeholder="Enter year"
+              value={formData.year}
+              onChange={(e) =>
+                setFormData({ ...formData, year: Number(e.target.value) })
+              }
+              className="border p-2 rounded w-full"
+              required
+            />
+          </div>
         </div>
         <button
           type="submit"
@@ -199,11 +182,9 @@ export default function IssueManager() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-100">
-                <th className="p-2 border">#</th>
+                <th className="p-2 border">Volume</th>
+                <th className="p-2 border">Issue</th>
                 <th className="p-2 border">Year</th>
-                <th className="p-2 border">Month</th>
-                <th className="p-2 border">Title</th>
-                <th className="p-2 border">Special</th>
                 <th className="p-2 border text-center">Actions</th>
               </tr>
             </thead>
@@ -211,13 +192,9 @@ export default function IssueManager() {
               {Array.isArray(issues) && issues.length > 0 ? (
                 issues.map((issue) => (
                   <tr key={issue.id}>
-                    <td className="p-2 border">{issue.issueNumber}</td>
+                    <td className="p-2 border">{issue.volume}</td>
+                    <td className="p-2 border">{issue.issue}</td>
                     <td className="p-2 border">{issue.year}</td>
-                    <td className="p-2 border">{issue.month}</td>
-                    <td className="p-2 border">{issue.title}</td>
-                    <td className="p-2 border">
-                      {issue.isSpecial ? "Special" : "Non-special"}
-                    </td>
                     <td className="p-2 border text-center flex items-center justify-center space-x-2">
                       <button
                         onClick={() => handleEdit(issue)}
@@ -236,7 +213,7 @@ export default function IssueManager() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="p-4 text-center text-gray-500">
+                  <td colSpan={4} className="p-4 text-center text-gray-500">
                     No issues found.
                   </td>
                 </tr>

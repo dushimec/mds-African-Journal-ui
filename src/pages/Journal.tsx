@@ -19,6 +19,7 @@ import {
   User,
   Eye,
   Download,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -46,6 +47,8 @@ const Journal = () => {
   const [categories, setCategories] = useState([]);
   const [expandedId, setExpandedId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [currentIssue, setCurrentIssue] = useState<any>(null);
+  const [issues, setIssues] = useState<any[]>([]);
 
   // ✅ Fetch articles
   useEffect(() => {
@@ -79,6 +82,29 @@ const Journal = () => {
       }
     };
     fetchTopics();
+  }, []);
+
+  // ✅ Fetch issues and set current issue (latest)
+  useEffect(() => {
+    const fetchIssues = async () => {
+      try {
+        const res = await axios.get(`${BACKEND_URL}/issues/`);
+        const issuesData = res.data.data || [];
+        setIssues(issuesData);
+
+        // Get the latest issue (highest volume, then highest issue)
+        if (issuesData.length > 0) {
+          const sorted = issuesData.sort((a: any, b: any) => {
+            if (b.volume !== a.volume) return b.volume - a.volume;
+            return b.issue - a.issue;
+          });
+          setCurrentIssue(sorted[0]);
+        }
+      } catch (error) {
+        console.error("Error fetching issues:", error);
+      }
+    };
+    fetchIssues();
   }, []);
 
   const handleViewPdf = async (article: any) => {
@@ -118,10 +144,68 @@ const Journal = () => {
   return (
     <div className="min-h-screen py-12">
       <div className="container mx-auto px-4">
+        {/* Current Issue Section */}
+        {currentIssue && (
+          <section className="mb-16">
+            <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-8 border border-primary/20">
+              <div className="text-center mb-8">
+                <Badge variant="secondary" className="mb-4">
+                  Latest Issue
+                </Badge>
+                <h2 className="text-3xl md:text-4xl font-bold font-heading mb-4">
+                  Volume {currentIssue.volume}, Issue {currentIssue.issue}
+                </h2>
+                <p className="text-lg text-muted-foreground mb-6">
+                  Published: {new Date(currentIssue.createdAt).toLocaleDateString()}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-sm text-muted-foreground">
+                    Publication Year
+                  </h3>
+                  <p className="text-2xl font-bold">{currentIssue.year}</p>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-sm text-muted-foreground">
+                    Articles in This Issue
+                  </h3>
+                  <p className="text-2xl font-bold">
+                    {articles.filter(
+                      (a) =>
+                        a.volume === currentIssue.volume &&
+                        a.issue === currentIssue.issue
+                    ).length}
+                  </p>
+                </div>
+              </div>
+
+              <div className="text-center">
+                <Button
+                  size="lg"
+                  onClick={() =>
+                    navigate(
+                      `/issue/${currentIssue.volume}/${currentIssue.issue}`
+                    )
+                  }
+                  className="gap-2"
+                >
+                  View This Issue
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </section>
+        )}
+
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-3xl font-bold font-heading mb-6">
-            Current Topics
+            Published Articles
           </h1>
+          <p className="text-muted-foreground">
+            Browse all published articles from our journal
+          </p>
         </div>
 
         {/* Search and Filter */}

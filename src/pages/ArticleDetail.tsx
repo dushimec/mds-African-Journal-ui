@@ -13,8 +13,27 @@ import {
   User,
   BookOpen,
   FileText,
+  Copy,
+  Check,
+  Share2,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "react-toastify";
+import {
+  generateAPACitation,
+  generateMLACitation,
+  generateChicagoCitation,
+  generateHarvardCitation,
+  generateBibTeXCitation,
+  generateRISCitation,
+  copyToClipboard,
+} from "@/lib/citationFormats";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 
 const BACKEND_URL = import.meta.env.VITE_API_URL;
 
@@ -24,6 +43,8 @@ const ArticleDetail = () => {
   const [article, setArticle] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [downloadingFile, setDownloadingFile] = useState<string | null>(null);
+  const [copiedCitation, setCopiedCitation] = useState<string | null>(null);
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
   // Fetch article details
   useEffect(() => {
@@ -109,6 +130,17 @@ const ArticleDetail = () => {
     }
   };
 
+  const handleCopyCitation = async (citation: string, format: string) => {
+    const success = await copyToClipboard(citation);
+    if (success) {
+      setCopiedCitation(format);
+      toast.success(`${format.toUpperCase()} citation copied!`);
+      setTimeout(() => setCopiedCitation(null), 2000);
+    } else {
+      toast.error("Failed to copy citation");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen py-12">
@@ -138,10 +170,58 @@ const ArticleDetail = () => {
   }
 
   const pdfUrl = getPdfUrl(article);
+  const citations = {
+    apa: generateAPACitation(article),
+    mla: generateMLACitation(article),
+    chicago: generateChicagoCitation(article),
+    harvard: generateHarvardCitation(article),
+    bibtex: generateBibTeXCitation(article),
+    ris: generateRISCitation(article),
+  };
 
   return (
     <div className="min-h-screen py-12 bg-gradient-to-b from-background to-secondary/10">
       <div className="container mx-auto px-4 max-w-4xl">
+        {/* Breadcrumb Navigation */}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/journal")}
+            className="p-0"
+          >
+            Journal
+          </Button>
+          <span>/</span>
+          {article.volume && article.issue && (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate(`/volume/${article.volume}`)}
+                className="p-0"
+              >
+                Vol {article.volume}
+              </Button>
+              <span>/</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  navigate(`/issue/${article.volume}/${article.issue}`)
+                }
+                className="p-0"
+              >
+                Issue {article.issue}
+              </Button>
+              <span>/</span>
+            </>
+          )}
+          <span className="text-foreground font-medium truncate">
+            {article.manuscriptTitle?.substring(0, 50)}...
+          </span>
+        </div>
+
         {/* Back Button */}
         <Button
           variant="outline"
@@ -160,9 +240,11 @@ const ArticleDetail = () => {
               {/* Badge and Meta */}
               <div className="flex flex-wrap gap-2 items-center">
                 <Badge>{article.topic?.name || "General"}</Badge>
-                <Badge variant="outline">
-                  Vol {article.volume} | Issue {article.issue}
-                </Badge>
+                {article.volume && article.issue && (
+                  <Badge variant="outline">
+                    Vol {article.volume} | Issue {article.issue}
+                  </Badge>
+                )}
               </div>
 
               {/* Title */}
@@ -172,20 +254,40 @@ const ArticleDetail = () => {
                 </h1>
               </div>
 
-              {/* Authors */}
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center text-muted-foreground">
-                  <User className="mr-2 h-4 w-4" />
-                  <span className="font-medium">
-                    {Array.isArray(article.authors) && article.authors.length > 0
-                      ? article.authors
-                          .map(
-                            (a: any) =>
-                              `${a.fullName}${a.affiliation ? ` (${a.affiliation})` : ""}`
-                          )
-                          .join("; ")
-                      : "Unknown Author"}
-                  </span>
+              {/* Authors with Links */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                  <User className="h-4 w-4" />
+                  <span className="font-medium">Authors</span>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  {Array.isArray(article.authors) && article.authors.length > 0
+                    ? article.authors.map((author: any, idx: number) => (
+                        <div key={idx} className="flex flex-col">
+                          <Button
+                            variant="link"
+                            className="p-0 h-auto font-medium text-primary hover:underline text-left"
+                            onClick={() =>
+                              navigate(
+                                `/author/${encodeURIComponent(author.fullName)}`
+                              )
+                            }
+                          >
+                            {author.fullName}
+                          </Button>
+                          {author.affiliation && (
+                            <p className="text-sm text-muted-foreground">
+                              {author.affiliation}
+                            </p>
+                          )}
+                          {author.isCorresponding && (
+                            <Badge variant="secondary" className="w-fit text-xs mt-1">
+                              Corresponding Author
+                            </Badge>
+                          )}
+                        </div>
+                      ))
+                    : <span className="text-muted-foreground">Unknown Author</span>}
                 </div>
               </div>
 
@@ -205,12 +307,27 @@ const ArticleDetail = () => {
                 </div>
               </div>
 
-              {/* DOI */}
-              {article.doiSlug && (
-                <div className="pt-2 border-t">
-                  <p className="text-sm">
-                    <strong>DOI:</strong> {article.doiSlug}
-                  </p>
+              {/* DOI and Additional Metadata */}
+              {(article.doiSlug || article.manuscriptType) && (
+                <div className="pt-2 border-t space-y-2">
+                  {article.doiSlug && (
+                    <p className="text-sm">
+                      <strong>DOI:</strong>{" "}
+                      <a
+                        href={`https://doi.org/${article.doiSlug}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        {article.doiSlug}
+                      </a>
+                    </p>
+                  )}
+                  {article.manuscriptType && (
+                    <p className="text-sm">
+                      <strong>Article Type:</strong> {article.manuscriptType.replace(/_/g, " ")}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -244,9 +361,90 @@ const ArticleDetail = () => {
               </div>
             )}
 
+            {/* Citation Section */}
+            <div className="pt-6 border-t">
+              <div
+                className="flex items-center justify-between cursor-pointer py-3"
+                onClick={() =>
+                  setExpandedSection(
+                    expandedSection === "citations" ? null : "citations"
+                  )
+                }
+              >
+                <h3 className="text-lg font-bold flex items-center">
+                  <Share2 className="mr-2 h-5 w-5" />
+                  Cite This Article
+                </h3>
+                <ChevronDown
+                  className={`h-5 w-5 transition-transform ${
+                    expandedSection === "citations" ? "rotate-180" : ""
+                  }`}
+                />
+              </div>
+
+              {expandedSection === "citations" && (
+                <div className="mt-4 space-y-4">
+                  <Tabs defaultValue="apa" className="w-full">
+                    <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
+                      <TabsTrigger value="apa" className="text-xs">
+                        APA
+                      </TabsTrigger>
+                      <TabsTrigger value="mla" className="text-xs">
+                        MLA
+                      </TabsTrigger>
+                      <TabsTrigger value="chicago" className="text-xs">
+                        Chicago
+                      </TabsTrigger>
+                      <TabsTrigger value="harvard" className="text-xs">
+                        Harvard
+                      </TabsTrigger>
+                      <TabsTrigger value="bibtex" className="text-xs">
+                        BibTeX
+                      </TabsTrigger>
+                      <TabsTrigger value="ris" className="text-xs">
+                        RIS
+                      </TabsTrigger>
+                    </TabsList>
+
+                    {Object.entries(citations).map(([format, citation]) => (
+                      <TabsContent key={format} value={format}>
+                        <div className="mt-4 space-y-3">
+                          <div className="bg-slate-50 p-4 rounded-lg font-mono text-sm overflow-auto max-h-32">
+                            <p className="whitespace-pre-wrap break-words">
+                              {citation}
+                            </p>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              handleCopyCitation(citation, format)
+                            }
+                            className="w-full"
+                          >
+                            {copiedCitation === format ? (
+                              <>
+                                <Check className="mr-2 h-4 w-4" />
+                                Copied!
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="mr-2 h-4 w-4" />
+                                Copy Citation
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </TabsContent>
+                    ))}
+                  </Tabs>
+                </div>
+              )}
+            </div>
+
             {/* Files Section */}
             {article.files && article.files.length > 0 && (
-              <div>
+              <div className="pt-6 border-t">
                 <h3 className="text-lg font-bold mb-3 flex items-center">
                   <BookOpen className="mr-2 h-5 w-5" />
                   Associated Files
@@ -279,21 +477,16 @@ const ArticleDetail = () => {
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
               {pdfUrl && (
-                <>
-                  <Button
-                    onClick={handleViewPdf}
-                    className="flex-1 sm:flex-initial"
-                  >
-                    <Eye className="mr-2 h-4 w-4" />
-                    View Full Document
-                  </Button>
-                </>
+                <Button onClick={handleViewPdf} className="flex-1 sm:flex-initial">
+                  <Eye className="mr-2 h-4 w-4" />
+                  View Full Document
+                </Button>
               )}
             </div>
           </CardContent>
         </Card>
 
-        {/* Additional Information */}
+        {/* Declarations Section */}
         {article.declarations && article.declarations.length > 0 && (
           <Card className="bg-secondary/5">
             <CardHeader>

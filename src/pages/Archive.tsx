@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,318 +12,372 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter, BookOpen } from "lucide-react";
+import {
+  Search,
+  Filter,
+  BookOpen,
+  Calendar,
+  ChevronDown,
+  FileText,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Archive = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedTopic, setSelectedTopic] = useState("all");
+  const [selectedYear, setSelectedYear] = useState("all");
   const [issues, setIssues] = useState<any[]>([]);
-  const [topics, setTopics] = useState<any[]>([]);
-  const [expandedMap, setExpandedMap] = useState<{ [key: string]: boolean }>({});
+  const [years, setYears] = useState<number[]>([]);
+  const [expandedVolumes, setExpandedVolumes] = useState<{
+    [key: number]: boolean;
+  }>({});
 
   // Totals state
   const [totalArticles, setTotalArticles] = useState(0);
   const [totalSubscribers, setTotalSubscribers] = useState(0);
   const [totalIssues, setTotalIssues] = useState(0);
   const [totalDownloads, setTotalDownloads] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-  // Loading states
-  const [loadingIssues, setLoadingIssues] = useState(true);
-  const [loadingTopics, setLoadingTopics] = useState(true);
-  const [loadingTotals, setLoadingTotals] = useState(true);
+  // Group issues by volume
+  const groupIssuesByVolume = (issuesData: any[]) => {
+    const grouped: { [key: number]: any[] } = {};
+    issuesData.forEach((issue) => {
+      if (!grouped[issue.volume]) {
+        grouped[issue.volume] = [];
+      }
+      grouped[issue.volume].push(issue);
+    });
+    return grouped;
+  };
+
+  // Get unique years
+  const extractYears = (issuesData: any[]) => {
+    const uniqueYears = Array.from(new Set(issuesData.map((i) => i.year))).sort(
+      (a, b) => b - a
+    );
+    return uniqueYears;
+  };
 
   // Fetch issues
   const fetchIssues = async () => {
     try {
-      const res = await axios.get(
-        `${import.meta.env.VITE_API_URL}/issues/`
-      );
-      setIssues(res.data.data || []);
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/issues/`);
+      const issuesData = res.data.data || [];
+      setIssues(issuesData);
+
+      // Extract and set years
+      const uniqueYears = extractYears(issuesData);
+      setYears(uniqueYears);
     } catch (error) {
       console.error("Error fetching issues:", error);
-    } finally {
-      setLoadingIssues(false);
-    }
-  };
-
-  // Fetch topics
-  const fetchTopics = async () => {
-    try {
-      const res = await axios.get(
-        "${import.meta.env.VITE_API_URL}/topic"
-      );
-      setTopics(res.data.data || []);
-    } catch (error) {
-      console.error("Error fetching topics:", error);
-    } finally {
-      setLoadingTopics(false);
     }
   };
 
   // Fetch totals
- const fetchTotals = async () => {
-  try {
-    // 1️⃣ Fetch all articles/submissions
-    const articlesRes = await axios.get(
-      "${import.meta.env.VITE_API_URL}/submission"
-    );
-    const articlesData = articlesRes.data.data || [];
-    setTotalArticles(articlesData.length); // ✅ count all articles
+  const fetchTotals = async () => {
+    try {
+      // 1️⃣ Fetch all articles/submissions
+      const articlesRes = await axios.get(
+        `${import.meta.env.VITE_API_URL}/submission`
+      );
+      const articlesData = articlesRes.data.data || [];
+      const publishedArticles = articlesData.filter(
+        (a: any) => a.status === "PUBLISHED"
+      );
+      setTotalArticles(publishedArticles.length);
 
-    // 2️⃣ Fetch all issues
-    const issuesRes = await axios.get(
-      `${import.meta.env.VITE_API_URL}/issues/`
-    );
-    const issuesData = issuesRes.data.data || [];
-    setTotalIssues(issuesData.length); // ✅ count all issues
+      // 2️⃣ Fetch all issues
+      const issuesRes = await axios.get(
+        `${import.meta.env.VITE_API_URL}/issues/`
+      );
+      const issuesData = issuesRes.data.data || [];
+      setTotalIssues(issuesData.length);
 
-    // 3️⃣ Fetch newsletter subscribers
-    const subsRes = await axios.get(
-      `${import.meta.env.VITE_API_URL}/newsletter/subscribers`  
-    );
-    const subsData = subsRes.data.data.subscribers || [];
-    setTotalSubscribers(subsData.length); // ✅ count subscribers
-
-    // 4️⃣ Calculate total downloads (sum of all manuscript downloadCount)
-    const totalDownloads = articlesData.reduce((acc, article) => {
-      if (article.files && Array.isArray(article.files)) {
-        const manuscriptFile = article.files.find(
-          (file) => file.fileType === "MANUSCRIPT"
+      // 3️⃣ Fetch newsletter subscribers
+      try {
+        const subsRes = await axios.get(
+          `${import.meta.env.VITE_API_URL}/newsletter/subscribers`
         );
-        return acc + (manuscriptFile?.downloadCount || 0);
+        const subsData = subsRes.data.data?.subscribers || [];
+        setTotalSubscribers(subsData.length);
+      } catch {
+        setTotalSubscribers(0);
       }
-      return acc;
-    }, 0);
-    setTotalDownloads(totalDownloads);
 
-  } catch (error) {
-    console.error("Error fetching totals:", error);
-  } finally {
-    setLoadingTotals(false);
-  }
-};
-
+      // 4️⃣ Calculate total downloads
+      const totalDownloads = publishedArticles.reduce((acc: number, article: any) => {
+        if (article.files && Array.isArray(article.files)) {
+          const manuscriptFile = article.files.find(
+            (file: any) => file.fileType === "MANUSCRIPT"
+          );
+          return acc + (manuscriptFile?.downloadCount || 0);
+        }
+        return acc;
+      }, 0);
+      setTotalDownloads(totalDownloads);
+    } catch (error) {
+      console.error("Error fetching totals:", error);
+    }
+  };
 
   useEffect(() => {
-    fetchIssues();
-    fetchTopics();
-    fetchTotals();
+    const loadData = async () => {
+      setLoading(true);
+      await fetchIssues();
+      await fetchTotals();
+      setLoading(false);
+    };
+    loadData();
   }, []);
 
-  const toggleExpand = (id: string | number) => {
-    const issueId = String(id);
-    setExpandedMap((prev) => ({
+  const toggleVolumeExpand = (volume: number) => {
+    setExpandedVolumes((prev) => ({
       ...prev,
-      [issueId]: !prev[issueId],
+      [volume]: !prev[volume],
     }));
   };
 
+  // Filter issues based on search and year
   const filteredIssues = issues.filter((issue) => {
     const matchesSearch =
-      issue.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      issue.description?.toLowerCase().includes(searchTerm.toLowerCase());
+      issue.year?.toString().includes(searchTerm.toLowerCase()) ||
+      issue.volume?.toString().includes(searchTerm.toLowerCase());
 
-    const matchesTopic =
-      selectedTopic === "all" ||
-      issue.topic?.toLowerCase() === selectedTopic.toLowerCase();
+    const matchesYear =
+      selectedYear === "all" || issue.year?.toString() === selectedYear;
 
-    return matchesSearch && matchesTopic;
+    return matchesSearch && matchesYear;
   });
 
+  const groupedIssues = groupIssuesByVolume(filteredIssues);
+  const volumeNumbers = Object.keys(groupedIssues)
+    .map(Number)
+    .sort((a, b) => b - a);
+
+  const getPublicationPeriod = (issueNumber: number): string => {
+    return issueNumber === 1 ? "January – June" : "July – December";
+  };
+
   return (
-    <div className="min-h-screen py-12">
+    <div className="min-h-screen py-12 bg-gradient-to-b from-slate-50 to-white">
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold font-heading mb-6">
-            {loadingIssues ? <div className="h-10 w-64 bg-gray-300 mx-auto rounded" /> : "Journal Archive"}
+            Journal Archive
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            {loadingIssues ? <div className="h-4 w-80 bg-gray-200 mx-auto rounded" /> : "Explore past issues and research topics from our journal."}
+            Explore all published volumes and issues. Browse through years of
+            research and academic excellence.
           </p>
         </div>
 
-        {/* Totals Cards */}
-        <section className="mb-8">
+        {/* Statistics Cards */}
+        <section className="mb-12">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-            {[totalArticles, totalSubscribers, totalIssues, totalDownloads].map((value, idx) => (
-              <Card key={idx} className="text-center shadow-medium">
-                <CardContent className="pt-6">
-                  {loadingTotals ? (
-                    <div className="space-y-2">
-                      <div className="h-8 w-16 bg-gray-300 rounded mx-auto"></div>
-                      <div className="h-4 w-24 bg-gray-200 rounded mx-auto"></div>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="text-3xl font-bold text-primary mb-2">{value}</div>
-                      <div className="text-muted-foreground">
-                        {idx === 0
-                          ? "Total Articles"
-                          : idx === 1
-                          ? "Subscribers"
-                          : idx === 2
-                          ? "Issues Published"
-                          : "Total Downloads"}
-                      </div>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+            <Card className="shadow-md hover:shadow-lg transition-shadow">
+              <CardContent className="pt-6 text-center">
+                <div className="text-3xl font-bold text-primary mb-2">
+                  {totalArticles}
+                </div>
+                <p className="text-muted-foreground">Published Articles</p>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-md hover:shadow-lg transition-shadow">
+              <CardContent className="pt-6 text-center">
+                <div className="text-3xl font-bold text-primary mb-2">
+                  {totalIssues}
+                </div>
+                <p className="text-muted-foreground">Issues Published</p>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-md hover:shadow-lg transition-shadow">
+              <CardContent className="pt-6 text-center">
+                <div className="text-3xl font-bold text-primary mb-2">
+                  {volumeNumbers.length}
+                </div>
+                <p className="text-muted-foreground">Volumes</p>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-md hover:shadow-lg transition-shadow">
+              <CardContent className="pt-6 text-center">
+                <div className="text-3xl font-bold text-primary mb-2">
+                  {totalDownloads}
+                </div>
+                <p className="text-muted-foreground">Total Downloads</p>
+              </CardContent>
+            </Card>
           </div>
         </section>
 
-        {/* Search & Topic Filter */}
-        <div className="mb-8 flex flex-col md:flex-row gap-4 justify-center">
-          {/* Search */}
-          <div className="relative flex-1 max-w-lg">
+        {/* Search & Year Filter */}
+        <div className="mb-8 flex flex-col md:flex-row gap-4">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
-              placeholder="Search by title or description..."
+              placeholder="Search volumes, issues, or years..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
             />
           </div>
 
-          {/* Topic Filter */}
-          <Select value={selectedTopic} onValueChange={setSelectedTopic}>
-            <SelectTrigger className="w-52">
+          <Select value={selectedYear} onValueChange={setSelectedYear}>
+            <SelectTrigger className="w-full md:w-48">
               <Filter className="mr-2 h-4 w-4" />
-              <SelectValue placeholder="Topic" />
+              <SelectValue placeholder="Year" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Topics</SelectItem>
-              {loadingTopics
-                ? [...Array(3)].map((_, i) => (
-                    <SelectItem key={i} value={`loading-${i}`}>
-                      Loading...
-                    </SelectItem>
-                  ))
-                : topics.map((topic) => (
-                    <SelectItem key={topic.id} value={topic.name}>
-                      {topic.name}
-                    </SelectItem>
-                  ))}
+              <SelectItem value="all">All Years</SelectItem>
+              {years.map((year) => (
+                <SelectItem key={year} value={year.toString()}>
+                  {year}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
 
-        {/* Issues List */}
-        <section>
-          {loadingIssues ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
-              {[...Array(6)].map((_, i) => (
-                <Card key={i} className="h-64 flex flex-col justify-between">
-                  <CardHeader>
-                    <div className="h-4 w-20 bg-gray-200 rounded mb-2"></div>
-                    <div className="h-6 w-40 bg-gray-300 rounded"></div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="h-3 w-28 bg-gray-200 rounded"></div>
-                    <div className="h-3 w-full bg-gray-200 rounded"></div>
-                    <div className="h-3 w-5/6 bg-gray-200 rounded"></div>
-                  </CardContent>
-                  <div className="p-4">
-                    <div className="h-8 w-full bg-gray-300 rounded"></div>
-                  </div>
-                </Card>
+        {/* Volumes and Issues */}
+        <section className="space-y-8">
+          {loading ? (
+            <div className="space-y-6 animate-pulse">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="h-64 bg-slate-200 rounded-lg" />
               ))}
             </div>
-          ) : filteredIssues.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
-              No issues found.
-            </p>
+          ) : volumeNumbers.length === 0 ? (
+            <Card className="bg-slate-50">
+              <CardContent className="pt-12 text-center">
+                <BookOpen className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                <p className="text-muted-foreground text-lg">
+                  No volumes found matching your search criteria
+                </p>
+              </CardContent>
+            </Card>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredIssues.map((issue, index) => {
-                const issueId = String(issue.id);
-                const isExpanded = !!expandedMap[issueId];
+            volumeNumbers.map((volumeNumber) => {
+              const volumeIssues = groupedIssues[volumeNumber].sort(
+                (a, b) => a.issue - b.issue
+              );
+              const isExpanded = expandedVolumes[volumeNumber];
+              const year = volumeIssues[0]?.year || new Date().getFullYear();
 
-                return (
-                  <Card
-                    key={issueId}
-                    className="shadow-medium hover:shadow-strong transition-smooth flex flex-col justify-between self-start"
+              return (
+                <Card key={volumeNumber} className="shadow-md">
+                  <div
+                    onClick={() => toggleVolumeExpand(volumeNumber)}
+                    className="cursor-pointer"
                   >
-                    <div>
-                      <CardHeader>
-                        <Badge variant="outline" className="mb-2 w-fit">
-                          Issue {index + 1}
-                        </Badge>
-                        <CardTitle className="font-heading text-lg line-clamp-2">
-                          {issue.title || "Untitled Issue"}
-                        </CardTitle>
-                      </CardHeader>
-
-                      <CardContent>
-                        <p className="text-muted-foreground text-sm mb-3">
-                          Published: {new Date(issue.createdAt).toLocaleDateString()}
-                        </p>
-
-                        {issue.topic && (
-                          <p className="text-sm text-primary mb-2">
-                            <strong>Topic:</strong> {issue.topic}
-                          </p>
-                        )}
-
-                        <p
-                          className={`text-muted-foreground leading-relaxed text-sm mb-3 transition-all duration-300 overflow-hidden ${
-                            isExpanded ? "max-h-[500px]" : "max-h-[60px]"
-                          }`}
-                        >
-                          {issue.description || "No description available."}
-                        </p>
-
-                        <div
-                          className={`text-xs text-muted-foreground space-y-1 mt-2 transition-all duration-300 overflow-hidden ${
-                            isExpanded ? "max-h-[200px]" : "max-h-0"
-                          }`}
-                        >
-                          <p>
-                            <strong>Year:</strong> {issue.year || "-"}
-                          </p>
-                          <p>
-                            <strong>Month:</strong> {issue.month || "-"}
-                          </p>
-                          <p>
-                            <strong>Articles:</strong> {issue.articleCount || 0}
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h2 className="text-2xl font-bold font-heading mb-2">
+                            Volume {volumeNumber}
+                          </h2>
+                          <p className="text-muted-foreground">
+                            Publication Year: {year} • {volumeIssues.length}{" "}
+                            issue{volumeIssues.length !== 1 ? "s" : ""}
                           </p>
                         </div>
-                      </CardContent>
-                    </div>
+                        <ChevronDown
+                          className={`h-6 w-6 text-muted-foreground transition-transform ${
+                            isExpanded ? "rotate-180" : ""
+                          }`}
+                        />
+                      </div>
+                    </CardHeader>
+                  </div>
 
-                    <div className="flex gap-2 p-4 pt-0">
-                      <Button
-                        size="sm"
-                        variant="default"
-                        onClick={() => toggleExpand(issueId)}
-                        className="flex-1"
-                      >
-                        <BookOpen className="mr-2 h-4 w-4" />
-                        {isExpanded ? "Hide Details" : "View More"}
-                      </Button>
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
+                  {isExpanded && (
+                    <CardContent className="space-y-4 border-t pt-6">
+                      {volumeIssues.map((issue) => {
+                        const articlesInIssue = filteredIssues.filter(
+                          (i) =>
+                            i.volume === volumeNumber &&
+                            i.issue === issue.issue
+                        ).length;
+
+                        return (
+                          <Card
+                            key={`${issue.volume}-${issue.issue}`}
+                            className="cursor-pointer hover:shadow-md transition-shadow"
+                            onClick={() =>
+                              navigate(`/issue/${volumeNumber}/${issue.issue}`)
+                            }
+                          >
+                            <CardContent className="p-6">
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <Badge variant="secondary">
+                                      Issue {issue.issue}
+                                    </Badge>
+                                  </div>
+
+                                  <h3 className="text-lg font-semibold mb-2">
+                                    Issue {issue.issue}
+                                  </h3>
+
+                                  <p className="text-sm text-muted-foreground mb-3">
+                                    {getPublicationPeriod(issue.issue)} {year}
+                                  </p>
+
+                                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                    <div className="flex items-center gap-1">
+                                      <Calendar className="h-4 w-4" />
+                                      {new Date(
+                                        issue.createdAt
+                                      ).toLocaleDateString()}
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <FileText className="h-4 w-4" />
+                                      {articlesInIssue} article
+                                      {articlesInIssue !== 1 ? "s" : ""}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(
+                                      `/issue/${volumeNumber}/${issue.issue}`
+                                    );
+                                  }}
+                                >
+                                  View Issue
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </CardContent>
+                  )}
+                </Card>
+              );
+            })
           )}
         </section>
 
         {/* Subscribe Section */}
-        <section className="mt-16 text-center bg-gradient-card rounded-lg p-8">
-          <h2 className="text-3xl font-bold font-heading mb-4">
-            Stay Updated
-          </h2>
+        <section className="mt-16 text-center bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg p-12 border">
+          <h2 className="text-3xl font-bold font-heading mb-4">Stay Updated</h2>
           <p className="text-xl text-muted-foreground mb-6 max-w-2xl mx-auto">
-            Subscribe to get alerts about new issues, research, and journal updates.
+            Subscribe to receive alerts about new issues, research highlights,
+            and journal updates.
           </p>
           <Link to="/contact">
-          <Button size="lg" className="font-semibold">
-            Subscribe to Alerts
-          </Button>
+            <Button size="lg" className="font-semibold">
+              Subscribe to Alerts
+            </Button>
           </Link>
         </section>
       </div>

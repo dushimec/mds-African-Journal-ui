@@ -18,6 +18,9 @@ import GlobalLayout from "./components/GlobalLayout";
 import { GlobalSearchProvider } from "./components/GlobalSearchContext";
 import axios from "axios";
 import SearchResults from "./pages/SearchResults";
+import IssueDetail from "./pages/IssueDetail";
+import VolumeDetail from "./pages/VolumeDetail";
+import AuthorProfile from "./pages/AuthorProfile";
 
 
 // Admin pages
@@ -120,6 +123,9 @@ const App = () => {
           <Route path="/about" element={<About />} />
           <Route path="/journal" element={<Journal />} />
           <Route path="/article/:id" element={<ArticleDetail />} />
+          <Route path="/issue/:volumeId/:issueId" element={<IssueDetail />} />
+          <Route path="/volume/:volumeNumber" element={<VolumeDetail />} />
+          <Route path="/author/:authorName" element={<AuthorProfile />} />
           <Route path="/editorial-board" element={<EditorialBoard />} />
           <Route path="/author-page" element={<AuthorPage />} />
           <Route path="/archive" element={<Archive />} />

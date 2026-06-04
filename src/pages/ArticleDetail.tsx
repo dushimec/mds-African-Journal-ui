@@ -77,11 +77,13 @@ const ArticleDetail = () => {
   }, [id, navigate]);
 
   const getPdfUrl = (article: any) => {
+    // Primary: use volume/issue/seoPdfName format /:volume/:issue/:slug.pdf
     if (article.volume && article.issue && article.seoPdfName) {
-      return `${BACKEND_URL.replace('/api/v1', '')}/vol${article.volume}/issue${article.issue}/${article.seoPdfName}`;
+      return `/vol${article.volume}/issue${article.issue}/${article.seoPdfName}`;
     }
+    // Fallback: use doiSlug if available
     if (article.doiSlug) {
-      return `${BACKEND_URL}/article/${article.doiSlug}/download`;
+      return `/article-pdf/${encodeURIComponent(article.doiSlug)}/url`;
     }
     return null;
   };
@@ -115,20 +117,16 @@ const ArticleDetail = () => {
       setDownloadingFile(null);
     }
   };
+  
 
-  const handleViewPdf = async () => {
-    const pdfUrl = getPdfUrl(article);
-    if (pdfUrl) {
-      try {
-        window.open(pdfUrl, "_blank");
-      } catch (error) {
-        console.error("Error opening PDF:", error);
-        toast.error("Failed to open PDF");
-      }
-    } else {
-      toast.error("PDF not available for this article");
-    }
-  };
+ const handleViewPdf = async (article: any) => {
+     const pdfUrl = getPdfUrl(article);
+     if (pdfUrl) {
+       window.open(pdfUrl, '_blank');
+     } else {
+       toast.error('PDF not available for this article');
+     }
+   };
 
   const handleCopyCitation = async (citation: string, format: string) => {
     const success = await copyToClipboard(citation);
@@ -261,33 +259,41 @@ const ArticleDetail = () => {
                   <span className="font-medium">Authors</span>
                 </div>
                 <div className="flex flex-wrap gap-3">
-                  {Array.isArray(article.authors) && article.authors.length > 0
-                    ? article.authors.map((author: any, idx: number) => (
-                        <div key={idx} className="flex flex-col">
-                          <Button
-                            variant="link"
-                            className="p-0 h-auto font-medium text-primary hover:underline text-left"
-                            onClick={() =>
-                              navigate(
-                                `/author/${encodeURIComponent(author.fullName)}`
-                              )
-                            }
+                  {Array.isArray(article.authors) &&
+                  article.authors.length > 0 ? (
+                    article.authors.map((author: any, idx: number) => (
+                      <div key={idx} className="flex flex-col">
+                        <Button
+                          variant="link"
+                          className="p-0 h-auto font-medium text-primary hover:underline text-left"
+                          onClick={() =>
+                            navigate(
+                              `/author/${encodeURIComponent(author.fullName)}`,
+                            )
+                          }
+                        >
+                          {author.fullName}
+                        </Button>
+                        {author.affiliation && (
+                          <p className="text-sm text-muted-foreground">
+                            {author.affiliation}
+                          </p>
+                        )}
+                        {author.isCorresponding && (
+                          <Badge
+                            variant="secondary"
+                            className="w-fit text-xs mt-1"
                           >
-                            {author.fullName}
-                          </Button>
-                          {author.affiliation && (
-                            <p className="text-sm text-muted-foreground">
-                              {author.affiliation}
-                            </p>
-                          )}
-                          {author.isCorresponding && (
-                            <Badge variant="secondary" className="w-fit text-xs mt-1">
-                              Corresponding Author
-                            </Badge>
-                          )}
-                        </div>
-                      ))
-                    : <span className="text-muted-foreground">Unknown Author</span>}
+                            Corresponding Author
+                          </Badge>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <span className="text-muted-foreground">
+                      Unknown Author
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -295,7 +301,10 @@ const ArticleDetail = () => {
               <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center">
                   <Calendar className="mr-1 h-4 w-4" />
-                  Published: {new Date(article.publishedAt || article.createdAt).toLocaleDateString()}
+                  Published:{" "}
+                  {new Date(
+                    article.publishedAt || article.createdAt,
+                  ).toLocaleDateString()}
                 </div>
                 <div className="flex items-center">
                   <Eye className="mr-1 h-4 w-4" />
@@ -325,7 +334,8 @@ const ArticleDetail = () => {
                   )}
                   {article.manuscriptType && (
                     <p className="text-sm">
-                      <strong>Article Type:</strong> {article.manuscriptType.replace(/_/g, " ")}
+                      <strong>Article Type:</strong>{" "}
+                      {article.manuscriptType.replace(/_/g, " ")}
                     </p>
                   )}
                 </div>
@@ -367,7 +377,7 @@ const ArticleDetail = () => {
                 className="flex items-center justify-between cursor-pointer py-3"
                 onClick={() =>
                   setExpandedSection(
-                    expandedSection === "citations" ? null : "citations"
+                    expandedSection === "citations" ? null : "citations",
                   )
                 }
               >
@@ -417,9 +427,7 @@ const ArticleDetail = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() =>
-                              handleCopyCitation(citation, format)
-                            }
+                            onClick={() => handleCopyCitation(citation, format)}
                             className="w-full"
                           >
                             {copiedCitation === format ? (
@@ -454,19 +462,23 @@ const ArticleDetail = () => {
                     <Card key={file.id} className="border">
                       <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div className="flex-1">
-                          <p className="font-medium break-words">{file.fileName}</p>
+                          <p className="font-medium break-words">
+                            {file.fileName}
+                          </p>
                           <p className="text-sm text-muted-foreground">
                             {(file.fileSize / (1024 * 1024)).toFixed(2)} MB
                           </p>
                         </div>
-                        <Button
+                        {/* <Button
                           size="sm"
                           onClick={() => handleDownloadFile(file)}
                           disabled={downloadingFile === file.id}
                         >
                           <Download className="mr-2 h-4 w-4" />
-                          {downloadingFile === file.id ? "Downloading..." : "Download"}
-                        </Button>
+                          {downloadingFile === file.id
+                            ? "Downloading..."
+                            : "Download"}
+                        </Button> */}
                       </CardContent>
                     </Card>
                   ))}
@@ -477,9 +489,13 @@ const ArticleDetail = () => {
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
               {pdfUrl && (
-                <Button onClick={handleViewPdf} className="flex-1 sm:flex-initial">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleViewPdf(article)}
+                >
                   <Eye className="mr-2 h-4 w-4" />
-                  View Full Document
+                  View PDF
                 </Button>
               )}
             </div>

@@ -13,6 +13,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { toast } from "react-toastify";
+import { validateIssuesPerVolume } from "@/lib/issueValidation";
 
 const BACKEND_URL = import.meta.env.VITE_API_URL;
 
@@ -47,7 +48,10 @@ const IssueDetail = () => {
 
         // Fetch all issues to find matching volume and issue
         const issuesRes = await axios.get(`${BACKEND_URL}/issues/`);
-        const allIssues = issuesRes.data.data || [];
+        let allIssues = issuesRes.data.data || [];
+        
+        // ✅ Validate: max 2 issues per volume
+        allIssues = validateIssuesPerVolume(allIssues);
 
         const matchingIssue = allIssues.find(
           (issue: any) =>

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { validateIssuesPerVolume } from "@/lib/issueValidation";
 
 interface Volume {
   id?: string;
@@ -42,7 +43,10 @@ export default function VolumeManager() {
         config
       );
 
-      const issuesData = Array.isArray(res.data) ? res.data : res.data?.data || [];
+      let issuesData = Array.isArray(res.data) ? res.data : res.data?.data || [];
+      
+      // ✅ Validate: max 2 issues per volume
+      issuesData = validateIssuesPerVolume(issuesData);
 
       // Group issues by volume
       const volumeMap: { [key: number]: Volume } = {};
@@ -252,52 +256,73 @@ export default function VolumeManager() {
             </p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {volumes.map((volume) => (
-                <Card key={volume.volume} className="border">
-                  <CardContent className="pt-6">
-                    <div className="space-y-4">
-                      <div>
-                        <h3 className="text-xl font-bold">
-                          Volume {volume.volume}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          Year: {volume.year}
-                        </p>
-                      </div>
+              {volumes.map((volume) => {
+                const isComplete = volume.issueCount === 2;
+                return (
+                  <Card key={volume.volume} className={`border ${isComplete ? 'border-green-300' : 'border-yellow-300'}`}>
+                    <CardContent className="pt-6">
+                      <div className="space-y-4">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="text-xl font-bold">
+                              Volume {volume.volume}
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
+                              Year: {volume.year}
+                            </p>
+                          </div>
+                          <Badge 
+                            variant={isComplete ? "default" : "secondary"}
+                            className={isComplete ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}
+                          >
+                            {isComplete ? '✓ Complete' : '⚠ Incomplete'}
+                          </Badge>
+                        </div>
 
-                      <div className="bg-slate-50 p-3 rounded">
-                        <p className="text-sm text-muted-foreground mb-1">
-                          Issues
-                        </p>
-                        <p className="text-2xl font-bold text-primary">
-                          {volume.issueCount || 0}
-                        </p>
-                      </div>
+                        <div className={`${isComplete ? 'bg-green-50' : 'bg-yellow-50'} p-3 rounded`}>
+                          <p className="text-sm text-muted-foreground mb-1">
+                            Issues
+                          </p>
+                          <div className="flex items-baseline gap-2">
+                            <p className="text-2xl font-bold text-primary">
+                              {volume.issueCount || 0}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              / 2 (max)
+                            </p>
+                          </div>
+                          {!isComplete && (
+                            <p className="text-xs text-yellow-700 mt-2">
+                              Missing {2 - (volume.issueCount || 0)} issue(s)
+                            </p>
+                          )}
+                        </div>
 
-                      <div className="flex gap-2 pt-4 border-t">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEdit(volume)}
-                          className="flex-1"
-                        >
-                          <Pencil className="h-4 w-4 mr-2" />
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDelete(volume.id)}
-                          className="flex-1"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </Button>
+                        <div className="flex gap-2 pt-4 border-t">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEdit(volume)}
+                            className="flex-1"
+                          >
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleDelete(volume.id)}
+                            className="flex-1"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </CardContent>
@@ -306,22 +331,35 @@ export default function VolumeManager() {
       {/* Info Section */}
       <Card className="bg-blue-50 border-blue-200">
         <CardContent className="pt-6">
-          <div className="space-y-2">
-            <h3 className="font-semibold text-sm">How Volumes Work</h3>
-            <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-              <li>
-                Volumes are automatically created when issues are created with a
-                new volume number
-              </li>
-              <li>Each volume typically contains 2 issues per year</li>
-              <li>
-                Volume numbers should be sequential (1, 2, 3, etc.)
-              </li>
-              <li>
-                To create a new volume, create issues using the Issue Manager
-                with the new volume number
-              </li>
-            </ul>
+          <div className="space-y-3">
+            <h3 className="font-semibold text-sm">📋 Journal Structure & Rules</h3>
+            <div className="bg-white p-3 rounded border-l-4 border-blue-500">
+              <p className="text-sm font-medium text-gray-700 mb-2">🔑 Key Constraint:</p>
+              <p className="text-sm text-gray-600 mb-3">
+                <strong>Each Volume can have a maximum of 2 Issues only</strong>
+              </p>
+              <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                <li>
+                  <strong>Volume</strong> = One publication year (e.g., 2026, 2027)
+                </li>
+                <li>
+                  <strong>Issue 1:</strong> January – June publication period
+                </li>
+                <li>
+                  <strong>Issue 2:</strong> July – December publication period
+                </li>
+                <li>
+                  Total: 2 issues per volume, no more, no less
+                </li>
+              </ul>
+            </div>
+            <div className="text-xs text-gray-600 space-y-1 pt-2">
+              <p>✅ How to create a volume:</p>
+              <p className="ml-2">1. Go to Issue Manager</p>
+              <p className="ml-2">2. Create Issue 1 with Volume number (e.g., 1)</p>
+              <p className="ml-2">3. Create Issue 2 with same Volume number</p>
+              <p className="ml-2">4. Volume will appear here automatically</p>
+            </div>
           </div>
         </CardContent>
       </Card>

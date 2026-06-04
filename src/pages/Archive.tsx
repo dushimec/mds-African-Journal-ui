@@ -21,6 +21,7 @@ import {
   FileText,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { validateIssuesPerVolume } from "@/lib/issueValidation";
 
 const Archive = () => {
   const navigate = useNavigate();
@@ -63,7 +64,10 @@ const Archive = () => {
   const fetchIssues = async () => {
     try {
       const res = await axios.get(`${import.meta.env.VITE_API_URL}/issues/`);
-      const issuesData = res.data.data || [];
+      let issuesData = res.data.data || [];
+      
+      // ✅ Validate: max 2 issues per volume
+      issuesData = validateIssuesPerVolume(issuesData);
       setIssues(issuesData);
 
       // Extract and set years

@@ -17,6 +17,7 @@ import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { toast } from "react-toastify";
+import { countValidIssues } from "@/lib/issueValidation";
 
 const Home = () => {
   const [featuredArticles, setFeaturedArticles] = useState<any[]>([]);
@@ -68,7 +69,10 @@ const Home = () => {
     try {
       const issuesRes = await axios.get(`${backendUrl}/issues/`);
       const issuesData = issuesRes.data.data || [];
-      setTotalIssues(issuesData.length); // ✅ count all issues
+      
+      // ✅ Count only valid issues (max 2 per volume)
+      const validCount = countValidIssues(issuesData);
+      setTotalIssues(validCount);
     } catch (error) {
       console.error("Failed to fetch issues count", error);
     }

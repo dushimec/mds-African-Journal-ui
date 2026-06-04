@@ -22,6 +22,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { toast } from "react-toastify";
+import { validateIssuesPerVolume } from "@/lib/issueValidation";
 
 // ✅ Base URL from Vite environment variable
 const BACKEND_URL = import.meta.env.VITE_API_URL;
@@ -89,7 +90,10 @@ const Journal = () => {
     const fetchIssues = async () => {
       try {
         const res = await axios.get(`${BACKEND_URL}/issues/`);
-        const issuesData = res.data.data || [];
+        let issuesData = res.data.data || [];
+        
+        // ✅ Validate: max 2 issues per volume
+        issuesData = validateIssuesPerVolume(issuesData);
         setIssues(issuesData);
 
         // Get the latest issue (highest volume, then highest issue)

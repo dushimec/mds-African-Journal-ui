@@ -28,6 +28,7 @@ import {
   generateRISCitation,
   copyToClipboard,
 } from "@/lib/citationFormats";
+import { setupArticlePageSEO } from "@/lib/seoMetadata";
 import {
   Tabs,
   TabsContent,
@@ -59,7 +60,12 @@ const ArticleDetail = () => {
         setLoading(true);
         const res = await axios.get(`${BACKEND_URL}/submission/${id}`);
         if (res.data.success && res.data.data) {
-          setArticle(res.data.data);
+          const articleData = res.data.data;
+          setArticle(articleData);
+
+          // Setup SEO metadata with DOI for Google indexing
+          const pageUrl = `${window.location.origin}/article/${id}`;
+          setupArticlePageSEO(articleData, pageUrl);
         } else {
           toast.error("Article not found");
           navigate("/journal");
@@ -327,6 +333,7 @@ const ArticleDetail = () => {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-primary hover:underline"
+                        itemProp="identifier"
                       >
                         {article.doiSlug}
                       </a>

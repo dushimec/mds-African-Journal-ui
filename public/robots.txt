@@ -1,14 +1,69 @@
+# Sitemap location - helps Google discover all pages including DOI-indexed articles
+Sitemap: https://www.jaedp.org/sitemap.xml
+
+# Allow all bots to crawl the site
+User-agent: *
+Allow: /
+Allow: /article/
+Allow: /volume/
+Allow: /issue/
+Disallow: /login
+Disallow: /register
+Disallow: /admin
+Crawl-delay: 1
+
+# Specific rules for Google Search and Google Scholar
 User-agent: Googlebot
 Allow: /
+Allow: /article/
+Allow: /volume/
+Allow: /issue/
+Allow: /author/
+Disallow: /login
+Disallow: /register
+Disallow: /admin
+Crawl-delay: 0
 
+# Google Scholar crawler - high priority for academic content
+User-agent: Googlebot-Scholar
+Allow: /
+Allow: /article/
+Allow: /volume/
+Allow: /issue/
+Allow: /author/
+Crawl-delay: 0
+
+# Bing/MSN bot
 User-agent: Bingbot
 Allow: /
+Disallow: /login
+Disallow: /register
+Disallow: /admin
+Crawl-delay: 1
 
+# Academic search engines
+User-agent: CCBot
+Allow: /article/
+Allow: /volume/
+Allow: /issue/
+Crawl-delay: 1
+
+# Social media bots
 User-agent: Twitterbot
 Allow: /
 
 User-agent: facebookexternalhit
 Allow: /
 
+# Bad bots
+User-agent: AhrefsBot
+User-agent: SemrushBot
+User-agent: DotBot
+Disallow: /
+
+# Allow citation indexers
 User-agent: *
-Allow: /
+Allow: /article/
+Allow: /volume/
+Allow: /issue/
+Allow: /author/

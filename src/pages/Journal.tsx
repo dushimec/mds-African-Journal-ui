@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ScrollAnimationWrapper } from "@/components/ScrollAnimationWrapper";
 import {
   Select,
   SelectContent,
@@ -28,21 +27,11 @@ import { validateIssuesPerVolume } from "@/lib/issueValidation";
 // ✅ Base URL from Vite environment variable
 const BACKEND_URL = import.meta.env.VITE_API_URL;
 
-// Generate URL slug from title
-const generateSlug = (title: string) => {
-  return title
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-");
-};
-
 // Generate PDF URL using /:volume/:issue/:slug.pdf endpoint
 const getPdfUrl = (article: any) => {
-  // Primary: use volume/issue/articleSlug format /:volume/:issue/:slug.pdf
-  if (article.volume && article.issue && article.articleSlug) {
-    return `/vol${article.volume}/issue${article.issue}/${article.articleSlug}`;
+  // Primary: use volume/issue/seoPdfName format /:volume/:issue/:slug.pdf
+  if (article.volume && article.issue && article.seoPdfName) {
+    return `/vol${article.volume}/issue${article.issue}/${article.seoPdfName}`;
   }
   // Fallback: use doiSlug if available
   if (article.doiSlug) {
@@ -284,73 +273,110 @@ const Journal = () => {
           </div>
         ) : (
           <div className="space-y-8">
-            {filteredArticles.map((article, index) => (
-              <ScrollAnimationWrapper 
-                key={article.id}
-                animationType="slide-in-up" 
-                delay={index % 3 * 100}
-                threshold={0.2}
-              >
+            {filteredArticles.map((article) => (
               <Card
-                className="shadow-medium hover:shadow-strong transition-smooth cursor-pointer"
-                onClick={() => {
-                  const slug = generateSlug(article.manuscriptTitle || "article");
-                  navigate(`/article/${slug}/${article.id}`);
-                }}
+                key={article.id}
+                className="shadow-medium hover:shadow-strong transition-smooth"
               >
                 <CardHeader>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge variant="secondary">
-                      {article.topic?.name || article.category || "General"}
-                    </Badge>
-                    {article.volume && article.issue && (
-                      <Badge variant="outline">
-                        Vol {article.volume} | Issue {article.issue}
-                      </Badge>
-                    )}
-                    <div className="flex items-center text-sm text-muted-foreground ml-auto">
-                      <Calendar className="mr-1 h-3 w-3" />
-                      {new Date(article.createdAt).toDateString()}
+                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="secondary">
+                          {article.category || "General"}
+                        </Badge>
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <Calendar className="mr-1 h-3 w-3" />
+                          {new Date(article.createdAt).toDateString()}
+                        </div>
+                      </div>
+                      <CardTitle className="font-heading text-xl md:text-2xl mb-2 cursor-pointer hover:text-primary transition-colors"
+                        onClick={() => navigate(`/article/${article.id}`)}
+                      >
+                        {article.manuscriptTitle || "Untitled Article"}
+                      </CardTitle>
+                      {/* <div className="flex items-center text-muted-foreground mb-2">
+                        <User className="mr-1 h-4 w-4" />
+                        <span className="text-sm">
+                          {Array.isArray(article.authors)
+                            ? article.authors.map((a) => a.fullName).join(", ")
+                            : "Unknown Author"}
+                        </span>
+                      </div> */}
+                    </div>
+
+                    <div className="flex flex-col gap-2 md:items-end">
+                      <div className="flex gap-4 text-sm text-muted-foreground">
+                        <div className="flex items-center">
+                          <Eye className="mr-1 h-3 w-3" />
+                          {article.views || 0}
+                        </div>
+                        <div className="flex items-center">
+                          <Download className="mr-1 h-3 w-3" />
+                          {article.downloads || 0}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <CardTitle className="font-heading text-xl md:text-2xl hover:text-primary transition-colors">
-                    {article.manuscriptTitle || "Untitled Article"}
-                  </CardTitle>
                 </CardHeader>
-                {/* <CardContent className="space-y-3">
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {article.abstract || "No abstract available"}
+
+                {/* <CardContent>
+                  <p className="text-muted-foreground mb-4 leading-relaxed">
+                    {expandedId === article.id
+                      ? article.abstract
+                      : `${article.abstract?.slice(0, 150) || ""}...`}
                   </p>
-                  <div className="flex flex-wrap gap-3">
-                    <div className="flex items-center gap-2 text-sm">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <span>
-                        {Array.isArray(article.authors) && article.authors.length > 0
-                          ? article.authors.map((a) => a.fullName).join(", ")
-                          : "Unknown Author"}
-                      </span>
+
+                  {expandedId === article.id && (
+                    <div className="mt-2 space-y-2">
+                      <p>
+                        <strong>Keywords:</strong> {article.keywords.split(',').slice(0,5).join(',')}
+                      </p>
+                      <p>
+                        <strong>Created At:</strong>{" "}
+                        {new Date(article.createdAt).toLocaleDateString()}
+                      </p>
+                      {article.issue && (
+                        <p>
+                          <strong>Issue:</strong> {article.issue.title}
+                        </p>
+                      )}
                     </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Eye className="h-4 w-4 text-muted-foreground" />
-                      <span>{article.views || 0}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Download className="h-4 w-4 text-muted-foreground" />
-                      <span>{article.downloads || 0}</span>
-                    </div>
-                  </div>
-                  {article.keywords && (
-                    <div className="flex flex-wrap gap-2 pt-2">
-                      {article.keywords.split(",").map((keyword, idx) => (
-                        <Badge key={idx} variant="outline" className="text-xs">
+                  )}
+
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    {article.keywords &&
+                      article.keywords.split(",").slice(0,5).map((keyword, index) => (
+                        <Badge
+                          key={index}
+                          variant="outline"
+                          className="text-xs"
+                        >
                           {keyword.trim()}
                         </Badge>
                       ))}
-                    </div>
-                  )}
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-3 mt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => toggleExpand(article.id)}
+                    >
+                      <Eye className="mr-2 h-4 w-4" />
+                      {expandedId === article.id ? "Hide Details" : "Read More"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleViewPdf(article)}
+                    >
+                      <Eye className="mr-2 h-4 w-4" />
+                      View Document
+                    </Button>
+                  </div>
                 </CardContent> */}
               </Card>
-              </ScrollAnimationWrapper>
             ))}
           </div>
         )}

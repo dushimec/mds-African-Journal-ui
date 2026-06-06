@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ScrollAnimationWrapper } from "@/components/ScrollAnimationWrapper";
 import {
   BookOpen,
   Users,
@@ -12,6 +14,7 @@ import {
   Award,
   TrendingUp,
   Newspaper,
+  Calendar,
 } from "lucide-react";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
@@ -20,6 +23,7 @@ import { toast } from "react-toastify";
 import { countValidIssues } from "@/lib/issueValidation";
 
 const Home = () => {
+  const navigate = useNavigate();
   const [featuredArticles, setFeaturedArticles] = useState<any[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -230,7 +234,13 @@ const Home = () => {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
             {stats.map((stat, index) => (
-              <div key={index} className="text-center">
+              <ScrollAnimationWrapper 
+                key={index} 
+                animationType="slide-in-up" 
+                delay={index * 100}
+                threshold={0.2}
+              >
+              <div className="text-center">
                 <div className="flex justify-center mb-4">
                   <stat.icon className="h-8 w-8 text-primary" />
                 </div>
@@ -239,6 +249,7 @@ const Home = () => {
                 </div>
                 <div className="text-muted-foreground">{stat.label}</div>
               </div>
+              </ScrollAnimationWrapper>
             ))}
           </div>
         </div>
@@ -282,75 +293,34 @@ const Home = () => {
               : featuredArticles
                   .slice(0, 3)
                   .map((article: any, index: number) => (
-                    <Card
-                      key={index}
-                      className="shadow-medium hover:shadow-strong transition-all h-full flex flex-col justify-between"
+                    <ScrollAnimationWrapper 
+                      key={`wrapper-${index}`}
+                      animationType="slide-in-up" 
+                      delay={index * 100}
+                      threshold={0.2}
                     >
-                      <div>
-                        <CardHeader>
-                          <div className="text-sm text-primary font-bold mb-2">
-                            {article.keywords}
+                    <Card
+                      className="shadow-medium hover:shadow-strong transition-smooth"
+                    >
+                      <CardHeader>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge variant="secondary">
+                            {article.category || "General"}
+                          </Badge>
+                          <div className="flex items-center text-sm text-muted-foreground">
+                            <Calendar className="mr-1 h-3 w-3" />
+                            {new Date(article.createdAt).toDateString()}
                           </div>
-                          <CardTitle className="line-clamp-2">
-                            {article.manuscriptTitle || "Untitled Article"}
-                          </CardTitle>
-                        </CardHeader>
-
-                        <CardContent>
-                          <p className="text-muted-foreground mb-4">
-                            {Array.isArray(article.authors)
-                              ? article.authors
-                                  .map((a: any) => a.fullName)
-                                  .join(", ")
-                              : article.user
-                              ? `${article.user.firstName} ${article.user.lastName}`
-                              : "Unknown Author"}
-                          </p>
-
-                          <p className="text-muted-foreground mb-4 leading-relaxed line-clamp-3">
-                            {expandedId === article.id
-                              ? article.abstract
-                              : `${article.abstract?.slice(0, 150) || ""}...`}
-                          </p>
-
-                          {expandedId === article.id && (
-                            <div className="mt-2 space-y-2 text-sm">
-                              <p>
-                                <strong>Keywords:</strong> {article.keywords.split(',').slice(0,5).join(',')}
-                              </p>
-                              <p>
-                                <strong>Created At:</strong>{" "}
-                                {new Date(
-                                  article.createdAt
-                                ).toLocaleDateString()}
-                              </p>
-                            </div>
-                          )}
-                        </CardContent>
-                      </div>
-
-                      <div className="flex flex-wrap gap-2 p-4 pt-0">
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => toggleExpand(article.id)}
+                        </div>
+                        <CardTitle className="font-heading text-xl md:text-2xl cursor-pointer hover:text-primary transition-colors"
+                          onClick={() => navigate(`/article/${article.articleSlug || article.id}`)}
                         >
-                          {expandedId === article.id
-                            ? "Hide Details"
-                            : "Read More"}
-                        </Button>
-
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleViewPdf(article)}
-                      >
-                        <BookOpen className="mr-2 h-4 w-4" />
-                        View PDF
-                      </Button>
-                    </div>
-                  </Card>
-                ))}
+                          {article.manuscriptTitle || "Untitled Article"}
+                        </CardTitle>
+                      </CardHeader>
+                    </Card>
+                    </ScrollAnimationWrapper>
+                  ))}
           </div>
 
           <div className="text-center">
@@ -365,6 +335,7 @@ const Home = () => {
       </section>
 
       {/* Call for Papers */}
+      <ScrollAnimationWrapper animationType="slide-in-down" threshold={0.2}>
       <section className="py-16 bg-secondary/30">
         <div className="container mx-auto px-4 text-center">
           <Megaphone className="h-10 w-10 text-primary mx-auto mb-4" />
@@ -372,7 +343,7 @@ const Home = () => {
           <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
             Submit your latest research to our upcoming {totalIssues} issue
             {totalIssues > 1 ? "s" : ""} focusing on
-            <strong> “Innovation and Sustainable Development in Africa”</strong>
+            <strong> "Innovation and Sustainable Development in Africa"</strong>
             . Papers are welcome until <strong>March 30, 2026</strong>.
           </p>
           <Link to="/submission">
@@ -380,34 +351,43 @@ const Home = () => {
           </Link>
         </div>
       </section>
+      </ScrollAnimationWrapper>
 
       {/* Journal Metrics Section */}
+      <ScrollAnimationWrapper animationType="fade-in" threshold={0.2}>
       <section className="py-16 bg-secondary">
         <div className="container mx-auto px-4 text-center">
           <TrendingUp className="h-10 w-10 text-primary mx-auto mb-4" />
           <h2 className="text-3xl font-bold mb-8">Journal Metrics</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <ScrollAnimationWrapper animationType="slide-in-up" delay={0} threshold={0.2}>
             <Card className="shadow-sm p-6">
               <CardTitle>Acceptance Rate</CardTitle>
               <CardContent className="text-2xl font-bold">
                 {journalMetrics.acceptanceRate}
               </CardContent>
             </Card>
+            </ScrollAnimationWrapper>
+            <ScrollAnimationWrapper animationType="slide-in-up" delay={100} threshold={0.2}>
             <Card className="shadow-sm p-6">
               <CardTitle>Rejection Rate</CardTitle>
               <CardContent className="text-2xl font-bold">
                 {journalMetrics.rejectionRate}
               </CardContent>
             </Card>
+            </ScrollAnimationWrapper>
+            <ScrollAnimationWrapper animationType="slide-in-up" delay={200} threshold={0.2}>
             <Card className="shadow-sm p-6">
               <CardTitle>Total Submissions</CardTitle>
               <CardContent className="text-2xl font-bold">
                 {journalMetrics.totalSubmissions}
               </CardContent>
             </Card>
+            </ScrollAnimationWrapper>
           </div>
         </div>
       </section>
+      </ScrollAnimationWrapper>
 
       {/* Editorial Board Highlight */}
       <section className="py-16">

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ScrollAnimationWrapper } from "@/components/ScrollAnimationWrapper";
 import {
   Select,
   SelectContent,
@@ -180,6 +181,7 @@ const Archive = () => {
         {/* Statistics Cards */}
         <section className="mb-12">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+            <ScrollAnimationWrapper animationType="slide-in-up" delay={0} threshold={0.2}>
             <Card className="shadow-md hover:shadow-lg transition-shadow">
               <CardContent className="pt-6 text-center">
                 <div className="text-3xl font-bold text-primary mb-2">
@@ -188,7 +190,9 @@ const Archive = () => {
                 <p className="text-muted-foreground">Published Articles</p>
               </CardContent>
             </Card>
+            </ScrollAnimationWrapper>
 
+            <ScrollAnimationWrapper animationType="slide-in-up" delay={100} threshold={0.2}>
             <Card className="shadow-md hover:shadow-lg transition-shadow">
               <CardContent className="pt-6 text-center">
                 <div className="text-3xl font-bold text-primary mb-2">
@@ -197,7 +201,9 @@ const Archive = () => {
                 <p className="text-muted-foreground">Issues Published</p>
               </CardContent>
             </Card>
+            </ScrollAnimationWrapper>
 
+            <ScrollAnimationWrapper animationType="slide-in-up" delay={200} threshold={0.2}>
             <Card className="shadow-md hover:shadow-lg transition-shadow">
               <CardContent className="pt-6 text-center">
                 <div className="text-3xl font-bold text-primary mb-2">
@@ -206,7 +212,9 @@ const Archive = () => {
                 <p className="text-muted-foreground">Volumes</p>
               </CardContent>
             </Card>
+            </ScrollAnimationWrapper>
 
+            <ScrollAnimationWrapper animationType="slide-in-up" delay={300} threshold={0.2}>
             <Card className="shadow-md hover:shadow-lg transition-shadow">
               <CardContent className="pt-6 text-center">
                 <div className="text-3xl font-bold text-primary mb-2">
@@ -215,6 +223,7 @@ const Archive = () => {
                 <p className="text-muted-foreground">Total Downloads</p>
               </CardContent>
             </Card>
+            </ScrollAnimationWrapper>
           </div>
         </section>
 

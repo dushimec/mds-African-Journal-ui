@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollAnimationWrapper } from "@/components/ScrollAnimationWrapper";
 import {
   ArrowLeft,
   Download,
@@ -39,7 +40,7 @@ import {
 const BACKEND_URL = import.meta.env.VITE_API_URL;
 
 const ArticleDetail = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id: slug } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [article, setArticle] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -50,21 +51,21 @@ const ArticleDetail = () => {
   // Fetch article details
   useEffect(() => {
     const fetchArticle = async () => {
-      if (!id) {
-        toast.error("Article ID not provided");
+      if (!slug) {
+        toast.error("Article slug not provided");
         navigate("/journal");
         return;
       }
 
       try {
         setLoading(true);
-        const res = await axios.get(`${BACKEND_URL}/submission/${id}`);
+        const res = await axios.get(`${BACKEND_URL}/submission/by-slug/${slug}`);
         if (res.data.success && res.data.data) {
           const articleData = res.data.data;
           setArticle(articleData);
 
           // Setup SEO metadata with DOI for Google indexing
-          const pageUrl = `${window.location.origin}/article/${id}`;
+          const pageUrl = `${window.location.origin}/article/${slug}`;
           setupArticlePageSEO(articleData, pageUrl);
         } else {
           toast.error("Article not found");
@@ -80,12 +81,12 @@ const ArticleDetail = () => {
     };
 
     fetchArticle();
-  }, [id, navigate]);
+  }, [slug, navigate]);
 
   const getPdfUrl = (article: any) => {
     // Primary: use volume/issue/seoPdfName format /:volume/:issue/:slug.pdf
     if (article.volume && article.issue && article.seoPdfName) {
-      return `/vol${article.volume}/issue${article.issue}/${article.seoPdfName}`;
+      return `/article/pdf/vol${article.volume}/issue${article.issue}/${article.seoPdfName}`;
     }
     // Fallback: use doiSlug if available
     if (article.doiSlug) {
@@ -238,7 +239,8 @@ const ArticleDetail = () => {
         </Button>
 
         {/* Main Article Card */}
-        <Card className="shadow-lg mb-8">
+        <ScrollAnimationWrapper animationType="fade-in" threshold={0.1}>
+          <Card className="shadow-lg mb-8">
           <CardHeader>
             <div className="space-y-4">
               {/* Badge and Meta */}
@@ -259,48 +261,79 @@ const ArticleDetail = () => {
               </div>
 
               {/* Authors with Links */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                  <User className="h-4 w-4" />
-                  <span className="font-medium">Authors</span>
-                </div>
-                <div className="flex flex-wrap gap-3">
+              <div className="space-y-4">
+                {/* Primary Author */}
+                <div>
+                  <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                    <User className="h-4 w-4" />
+                    <span className="font-medium">Author</span>
+                  </div>
                   {Array.isArray(article.authors) &&
                   article.authors.length > 0 ? (
-                    article.authors.map((author: any, idx: number) => (
-                      <div key={idx} className="flex flex-col">
-                        <Button
-                          variant="link"
-                          className="p-0 h-auto font-medium text-primary hover:underline text-left"
-                          onClick={() =>
-                            navigate(
-                              `/author/${encodeURIComponent(author.fullName)}`,
-                            )
-                          }
-                        >
-                          {author.fullName}
-                        </Button>
-                        {author.affiliation && (
-                          <p className="text-sm text-muted-foreground">
-                            {author.affiliation}
-                          </p>
-                        )}
-                        {author.isCorresponding && (
-                          <Badge
-                            variant="secondary"
-                            className="w-fit text-xs mt-1"
-                          >
-                            Corresponding Author
-                          </Badge>
-                        )}
-                      </div>
-                    ))
+                    <div className="flex flex-col">
+                      <Button
+                        variant="link"
+                        className="p-0 h-auto font-medium text-primary hover:underline text-left"
+                        onClick={() =>
+                          navigate(
+                            `/author/${encodeURIComponent(article.authors[0].fullName)}`,
+                          )
+                        }
+                      >
+                        {article.authors[0].fullName}
+                      </Button>
+                      {article.authors[0].affiliation && (
+                        <p className="text-sm text-muted-foreground">
+                          {article.authors[0].affiliation}
+                        </p>
+                      )}
+                    </div>
                   ) : (
                     <span className="text-muted-foreground">
                       Unknown Author
                     </span>
                   )}
                 </div>
+
+                {/* Other Authors / Corresponding Authors */}
+                {Array.isArray(article.authors) && article.authors.length > 1 && (
+                  <div>
+                    <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                      <User className="h-4 w-4" />
+                      <span className="font-medium">Corresponding Authors</span>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      {article.authors.slice(1).map((author: any, idx: number) => (
+                        <div key={idx} className="flex flex-col">
+                          <Button
+                            variant="link"
+                            className="p-0 h-auto font-medium text-primary hover:underline text-left"
+                            onClick={() =>
+                              navigate(
+                                `/author/${encodeURIComponent(author.fullName)}`,
+                              )
+                            }
+                          >
+                            {author.fullName}
+                          </Button>
+                          {author.affiliation && (
+                            <p className="text-sm text-muted-foreground">
+                              {author.affiliation}
+                            </p>
+                          )}
+                          {author.isCorresponding && (
+                            <Badge
+                              variant="secondary"
+                              className="w-fit text-xs mt-1"
+                            >
+                              Corresponding Author
+                            </Badge>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Meta Information */}
@@ -352,6 +385,7 @@ const ArticleDetail = () => {
 
           <CardContent className="space-y-6">
             {/* Abstract */}
+            <ScrollAnimationWrapper animationType="slide-in-up" delay={100}>
             <div>
               <h2 className="text-xl font-bold mb-3 flex items-center">
                 <FileText className="mr-2 h-5 w-5" />
@@ -361,9 +395,11 @@ const ArticleDetail = () => {
                 {article.abstract || "No abstract available"}
               </p>
             </div>
+            </ScrollAnimationWrapper>
 
             {/* Keywords */}
             {article.keywords && (
+              <ScrollAnimationWrapper animationType="slide-in-right" delay={150}>
               <div>
                 <h3 className="text-lg font-bold mb-3">Keywords</h3>
                 <div className="flex flex-wrap gap-2">
@@ -376,10 +412,12 @@ const ArticleDetail = () => {
                     ))}
                 </div>
               </div>
+              </ScrollAnimationWrapper>
             )}
 
             {/* Citation Section */}
             <div className="pt-6 border-t">
+              <ScrollAnimationWrapper animationType="slide-in-left" delay={200}>
               <div
                 className="flex items-center justify-between cursor-pointer py-3"
                 onClick={() =>
@@ -398,8 +436,10 @@ const ArticleDetail = () => {
                   }`}
                 />
               </div>
+              </ScrollAnimationWrapper>
 
               {expandedSection === "citations" && (
+                <ScrollAnimationWrapper animationType="fade-in" delay={100}>
                 <div className="mt-4 space-y-4">
                   <Tabs defaultValue="apa" className="w-full">
                     <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
@@ -454,11 +494,13 @@ const ArticleDetail = () => {
                     ))}
                   </Tabs>
                 </div>
+                </ScrollAnimationWrapper>
               )}
             </div>
 
-            {/* Files Section */}
+            Files Section
             {article.files && article.files.length > 0 && (
+              <ScrollAnimationWrapper animationType="slide-in-up" delay={250}>
               <div className="pt-6 border-t">
                 <h3 className="text-lg font-bold mb-3 flex items-center">
                   <BookOpen className="mr-2 h-5 w-5" />
@@ -491,9 +533,11 @@ const ArticleDetail = () => {
                   ))}
                 </div>
               </div>
+              </ScrollAnimationWrapper>
             )}
 
             {/* Action Buttons */}
+            <ScrollAnimationWrapper animationType="slide-in-up" delay={300}>
             <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
               {pdfUrl && (
                 <Button
@@ -501,15 +545,18 @@ const ArticleDetail = () => {
                   size="sm"
                   onClick={() => handleViewPdf(article)}
                 >
-                  <Eye className="mr-2 h-4 w-4" />
-                  View PDF
+                  <Download className="mr-2 h-4 w-4" />
+                  Download PDF
                 </Button>
               )}
             </div>
+            </ScrollAnimationWrapper>
           </CardContent>
         </Card>
+        </ScrollAnimationWrapper>
 
         {/* Declarations Section */}
+        <ScrollAnimationWrapper animationType="slide-in-up" delay={200} threshold={0.2}>
         {article.declarations && article.declarations.length > 0 && (
           <Card className="bg-secondary/5">
             <CardHeader>
@@ -526,6 +573,7 @@ const ArticleDetail = () => {
             </CardContent>
           </Card>
         )}
+        </ScrollAnimationWrapper>
       </div>
     </div>
   );

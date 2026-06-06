@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useGlobalSearch } from "@/components/GlobalSearchContext";
+import { ScrollAnimationWrapper } from "@/components/ScrollAnimationWrapper";
 
 const SearchResults = () => {
 const { searchQuery } = useGlobalSearch();
@@ -42,14 +43,23 @@ fetchResults();
 
 }, [searchQuery]);
 
-return ( <div className="container mx-auto py-6"> <h1 className="text-xl font-bold mb-4">
-Search results for: "{searchQuery}" </h1>
+return ( <div className="container mx-auto py-6">
+  <ScrollAnimationWrapper animationType="fade-in" threshold={0.2}>
+  <h1 className="text-xl font-bold mb-4">
+    Search results for: "{searchQuery}" </h1>
+  </ScrollAnimationWrapper>
   {results.length === 0 ? (
     <p>No results found.</p>
   ) : (
     <ul className="space-y-3">
-      {results.map(item => (
-        <li key={item.id} className="p-3 border rounded">
+      {results.map((item, index) => (
+        <ScrollAnimationWrapper 
+          key={item.id}
+          animationType="slide-in-up" 
+          delay={index % 5 * 50}
+          threshold={0.2}
+        >
+        <li className="p-3 border rounded">
           <h2 className="font-semibold">
             {item.title || item.fullName || item.manuscriptTitle || item.subject || "No Title"}
           </h2>
@@ -58,6 +68,7 @@ Search results for: "{searchQuery}" </h1>
           </p>
           <small className="text-gray-500">{item.type}</small>
         </li>
+        </ScrollAnimationWrapper>
       ))}
     </ul>
   )}

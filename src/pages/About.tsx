@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ScrollAnimationWrapper } from "@/components/ScrollAnimationWrapper";
 import { Target, Eye, Award, Users, Globe, BookOpen } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -71,6 +72,7 @@ const About: React.FC = () => {
     <div className="min-h-screen py-12">
       <div className="container mx-auto px-4">
         {/* Header */}
+        <ScrollAnimationWrapper animationType="fade-in" threshold={0.2}>
         <div className="text-center mb-16">
           {loading ? (
             <>
@@ -86,6 +88,7 @@ const About: React.FC = () => {
             </>
           )}
         </div>
+        </ScrollAnimationWrapper>
 
         {/* Dynamic Sections */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
@@ -102,10 +105,16 @@ const About: React.FC = () => {
               ))
             : sections
                 .filter((sec) => sec.section !== "HEADER" && !missionSections.includes(sec.section))
-                .map((sec) => {
+                .map((sec, index) => {
                   const Icon = iconMap[sec.section] || Target;
                   return (
-                    <Card key={sec.id} className="shadow-medium">
+                    <ScrollAnimationWrapper 
+                      key={sec.id}
+                      animationType="slide-in-up" 
+                      delay={index % 2 * 100}
+                      threshold={0.2}
+                    >
+                    <Card className="shadow-medium">
                       <CardHeader>
                         <CardTitle className="flex items-center font-heading">
                           <Icon className="mr-3 h-6 w-6 text-primary" />
@@ -116,11 +125,13 @@ const About: React.FC = () => {
                         <p className="text-muted-foreground leading-relaxed">{sec.content}</p>
                       </CardContent>
                     </Card>
+                    </ScrollAnimationWrapper>
                   );
                 })}
         </div>
 
         {/* Mission Section */}
+        <ScrollAnimationWrapper animationType="fade-in" threshold={0.2}>
         <section className="mb-16">
           <h2 className="text-3xl font-bold font-heading text-center mb-12">Our Mission</h2>
           <h2 className="text-xl text-center mb-2">
@@ -139,11 +150,16 @@ const About: React.FC = () => {
                     </CardContent>
                   </Card>
                 ))
-              : missionValues.map((value) => {
+              : missionValues.map((value, index) => {
                   const Icon = iconMap[value.section] || Target;
                   return (
-                    <Card
+                    <ScrollAnimationWrapper 
                       key={value.id}
+                      animationType="slide-in-up" 
+                      delay={index * 100}
+                      threshold={0.2}
+                    >
+                    <Card
                       className="text-center shadow-soft hover:shadow-medium transition-smooth"
                     >
                       <CardHeader>
@@ -158,13 +174,16 @@ const About: React.FC = () => {
                         <p className="text-muted-foreground">{value.content}</p>
                       </CardContent>
                     </Card>
+                    </ScrollAnimationWrapper>
                   );
                 })}
           </div>
         </section>
+        </ScrollAnimationWrapper>
 
         {/* Call to Action */}
         {!loading && (
+          <ScrollAnimationWrapper animationType="slide-in-up" delay={200} threshold={0.2}>
           <div className="text-center">
             <h2 className="text-3xl font-bold font-heading mb-4">Join Our Community</h2>
             <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
@@ -178,6 +197,7 @@ const About: React.FC = () => {
               </a>
             </div>
           </div>
+          </ScrollAnimationWrapper>
         )}
       </div>
     </div>

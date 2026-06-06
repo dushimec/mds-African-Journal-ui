@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollAnimationWrapper } from "@/components/ScrollAnimationWrapper";
 import {
   ArrowLeft,
   Calendar,
@@ -144,6 +145,7 @@ const IssueDetail = () => {
         </Button>
 
         {/* Issue Header */}
+        <ScrollAnimationWrapper animationType="fade-in" threshold={0.2}>
         <div className="mb-12 border-b pb-8">
           <div className="flex items-center gap-2 mb-4">
             <Badge variant="secondary">Volume {issueData.volume}</Badge>
@@ -176,6 +178,7 @@ const IssueDetail = () => {
             </div>
           </div>
         </div>
+        </ScrollAnimationWrapper>
 
         {/* Articles List */}
         <div className="mb-12">
@@ -195,8 +198,13 @@ const IssueDetail = () => {
           ) : (
             <div className="space-y-4">
               {articles.map((article, index) => (
-                <Card
+                <ScrollAnimationWrapper 
                   key={article.id}
+                  animationType="slide-in-up" 
+                  delay={index % 4 * 100}
+                  threshold={0.2}
+                >
+                <Card
                   className="hover:shadow-lg transition-shadow cursor-pointer"
                   onClick={() => navigate(`/article/${article.id}`)}
                 >
@@ -257,6 +265,7 @@ const IssueDetail = () => {
                     </div>
                   </CardContent>
                 </Card>
+                </ScrollAnimationWrapper>
               ))}
             </div>
           )}

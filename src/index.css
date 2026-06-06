@@ -2,9 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-
-
-
 /* Academic Research Website Design System
 All colors MUST be HSL for proper theming.
 */
@@ -138,7 +135,63 @@ All colors MUST be HSL for proper theming.
   body {
     @apply bg-background text-foreground;
   }
+
+  html {
+    scroll-behavior: smooth;
+  }
 }
+
+/* Scroll Animation Utility Classes */
+@layer components {
+  .scroll-fade-in {
+    @apply opacity-0 transition-all duration-700 ease-out;
+  }
+
+  .scroll-fade-in-visible {
+    @apply opacity-100;
+  }
+
+  .scroll-slide-in-left {
+    @apply opacity-0 -translate-x-10 transition-all duration-700 ease-out;
+  }
+
+  .scroll-slide-in-left-visible {
+    @apply opacity-100 translate-x-0;
+  }
+
+  .scroll-slide-in-right {
+    @apply opacity-0 translate-x-10 transition-all duration-700 ease-out;
+  }
+
+  .scroll-slide-in-right-visible {
+    @apply opacity-100 translate-x-0;
+  }
+
+  .scroll-slide-in-up {
+    @apply opacity-0 translate-y-10 transition-all duration-700 ease-out;
+  }
+
+  .scroll-slide-in-up-visible {
+    @apply opacity-100 translate-y-0;
+  }
+
+  .scroll-slide-in-down {
+    @apply opacity-0 -translate-y-10 transition-all duration-700 ease-out;
+  }
+
+  .scroll-slide-in-down-visible {
+    @apply opacity-100 translate-y-0;
+  }
+
+  .scroll-scale-in {
+    @apply opacity-0 scale-95 transition-all duration-700 ease-out;
+  }
+
+  .scroll-scale-in-visible {
+    @apply opacity-100 scale-100;
+  }
+}
+
 /* Default toastify progress bar color */
 .Toastify__progress-bar {
   background: #22c55e !important; /* green */

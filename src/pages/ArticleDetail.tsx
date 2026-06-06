@@ -40,7 +40,7 @@ import {
 const BACKEND_URL = import.meta.env.VITE_API_URL;
 
 const ArticleDetail = () => {
-  const { id: slug } = useParams<{ id: string }>();
+  const { slug, id } = useParams<{ slug: string; id: string }>();
   const navigate = useNavigate();
   const [article, setArticle] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -51,21 +51,21 @@ const ArticleDetail = () => {
   // Fetch article details
   useEffect(() => {
     const fetchArticle = async () => {
-      if (!slug) {
-        toast.error("Article slug not provided");
+      if (!id) {
+        toast.error("Article ID not provided");
         navigate("/journal");
         return;
       }
 
       try {
         setLoading(true);
-        const res = await axios.get(`${BACKEND_URL}/submission/by-slug/${slug}`);
+        const res = await axios.get(`${BACKEND_URL}/submission/${id}`);
         if (res.data.success && res.data.data) {
           const articleData = res.data.data;
           setArticle(articleData);
 
           // Setup SEO metadata with DOI for Google indexing
-          const pageUrl = `${window.location.origin}/article/${slug}`;
+          const pageUrl = `${window.location.origin}/article/${id}`;
           setupArticlePageSEO(articleData, pageUrl);
         } else {
           toast.error("Article not found");
@@ -81,12 +81,12 @@ const ArticleDetail = () => {
     };
 
     fetchArticle();
-  }, [slug, navigate]);
+  }, [id, navigate]);
 
   const getPdfUrl = (article: any) => {
-    // Primary: use volume/issue/seoPdfName format /:volume/:issue/:slug.pdf
-    if (article.volume && article.issue && article.seoPdfName) {
-      return `/vol${article.volume}/issue${article.issue}/${article.seoPdfName}`;
+    // Primary: use volume/issue/articleSlug format /:volume/:issue/:slug.pdf
+    if (article.volume && article.issue && article.articleSlug) {
+      return `/vol${article.volume}/issue${article.issue}/${article.articleSlug}`;
     }
     // Fallback: use doiSlug if available
     if (article.doiSlug) {
@@ -261,79 +261,48 @@ const ArticleDetail = () => {
               </div>
 
               {/* Authors with Links */}
-              <div className="space-y-4">
-                {/* Primary Author */}
-                <div>
-                  <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                    <User className="h-4 w-4" />
-                    <span className="font-medium">Author</span>
-                  </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                  <User className="h-4 w-4" />
+                  <span className="font-medium">Authors</span>
+                </div>
+                <div className="flex flex-wrap gap-3">
                   {Array.isArray(article.authors) &&
                   article.authors.length > 0 ? (
-                    <div className="flex flex-col">
-                      <Button
-                        variant="link"
-                        className="p-0 h-auto font-medium text-primary hover:underline text-left"
-                        onClick={() =>
-                          navigate(
-                            `/author/${encodeURIComponent(article.authors[0].fullName)}`,
-                          )
-                        }
-                      >
-                        {article.authors[0].fullName}
-                      </Button>
-                      {article.authors[0].affiliation && (
-                        <p className="text-sm text-muted-foreground">
-                          {article.authors[0].affiliation}
-                        </p>
-                      )}
-                    </div>
+                    article.authors.map((author: any, idx: number) => (
+                      <div key={idx} className="flex flex-col">
+                        <Button
+                          variant="link"
+                          className="p-0 h-auto font-medium text-primary hover:underline text-left"
+                          onClick={() =>
+                            navigate(
+                              `/author/${encodeURIComponent(author.fullName)}`,
+                            )
+                          }
+                        >
+                          {author.fullName}
+                        </Button>
+                        {author.affiliation && (
+                          <p className="text-sm text-muted-foreground">
+                            {author.affiliation}
+                          </p>
+                        )}
+                        {author.isCorresponding && (
+                          <Badge
+                            variant="secondary"
+                            className="w-fit text-xs mt-1"
+                          >
+                            Corresponding Author
+                          </Badge>
+                        )}
+                      </div>
+                    ))
                   ) : (
                     <span className="text-muted-foreground">
                       Unknown Author
                     </span>
                   )}
                 </div>
-
-                {/* Other Authors / Corresponding Authors */}
-                {Array.isArray(article.authors) && article.authors.length > 1 && (
-                  <div>
-                    <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                      <User className="h-4 w-4" />
-                      <span className="font-medium">Corresponding Authors</span>
-                    </div>
-                    <div className="flex flex-wrap gap-3">
-                      {article.authors.slice(1).map((author: any, idx: number) => (
-                        <div key={idx} className="flex flex-col">
-                          <Button
-                            variant="link"
-                            className="p-0 h-auto font-medium text-primary hover:underline text-left"
-                            onClick={() =>
-                              navigate(
-                                `/author/${encodeURIComponent(author.fullName)}`,
-                              )
-                            }
-                          >
-                            {author.fullName}
-                          </Button>
-                          {author.affiliation && (
-                            <p className="text-sm text-muted-foreground">
-                              {author.affiliation}
-                            </p>
-                          )}
-                          {author.isCorresponding && (
-                            <Badge
-                              variant="secondary"
-                              className="w-fit text-xs mt-1"
-                            >
-                              Corresponding Author
-                            </Badge>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Meta Information */}
@@ -498,43 +467,7 @@ const ArticleDetail = () => {
               )}
             </div>
 
-            Files Section
-            {article.files && article.files.length > 0 && (
-              <ScrollAnimationWrapper animationType="slide-in-up" delay={250}>
-              <div className="pt-6 border-t">
-                <h3 className="text-lg font-bold mb-3 flex items-center">
-                  <BookOpen className="mr-2 h-5 w-5" />
-                  Associated Files
-                </h3>
-                <div className="space-y-3">
-                  {article.files.map((file: any) => (
-                    <Card key={file.id} className="border">
-                      <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div className="flex-1">
-                          <p className="font-medium break-words">
-                            {file.fileName}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {(file.fileSize / (1024 * 1024)).toFixed(2)} MB
-                          </p>
-                        </div>
-                        {/* <Button
-                          size="sm"
-                          onClick={() => handleDownloadFile(file)}
-                          disabled={downloadingFile === file.id}
-                        >
-                          <Download className="mr-2 h-4 w-4" />
-                          {downloadingFile === file.id
-                            ? "Downloading..."
-                            : "Download"}
-                        </Button> */}
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-              </ScrollAnimationWrapper>
-            )}
+            {/* Associated Files Section - Hidden */}
 
             {/* Action Buttons */}
             <ScrollAnimationWrapper animationType="slide-in-up" delay={300}>

@@ -122,7 +122,7 @@ const App = () => {
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
           <Route path="/journal" element={<Journal />} />
-          <Route path="/article/:id" element={<ArticleDetail />} />
+          <Route path="/article/:slug/:id" element={<ArticleDetail />} />
           <Route path="/issue/:volumeId/:issueId" element={<IssueDetail />} />
           <Route path="/volume/:volumeNumber" element={<VolumeDetail />} />
           <Route path="/author/:authorName" element={<AuthorProfile />} />

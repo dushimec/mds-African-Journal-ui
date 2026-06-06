@@ -556,7 +556,7 @@ const ArticleDetail = () => {
         </ScrollAnimationWrapper>
 
         {/* Declarations Section */}
-        <ScrollAnimationWrapper animationType="slide-in-up" delay={200} threshold={0.2}>
+        {/* <ScrollAnimationWrapper animationType="slide-in-up" delay={200} threshold={0.2}>
         {article.declarations && article.declarations.length > 0 && (
           <Card className="bg-secondary/5">
             <CardHeader>
@@ -573,7 +573,7 @@ const ArticleDetail = () => {
             </CardContent>
           </Card>
         )}
-        </ScrollAnimationWrapper>
+        </ScrollAnimationWrapper> */}
       </div>
     </div>
   );

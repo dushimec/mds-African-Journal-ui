@@ -86,7 +86,7 @@ const ArticleDetail = () => {
   const getPdfUrl = (article: any) => {
     // Primary: use volume/issue/seoPdfName format /:volume/:issue/:slug.pdf
     if (article.volume && article.issue && article.seoPdfName) {
-      return `/vol${article.volume}/issue${article.issue}/${article.seoPdfName}`;
+      return `/article/pdf/vol${article.volume}/issue${article.issue}/${article.seoPdfName}`;
     }
     // Fallback: use doiSlug if available
     if (article.doiSlug) {

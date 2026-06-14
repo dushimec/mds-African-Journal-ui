@@ -313,7 +313,11 @@ const Home = () => {
                           </div>
                         </div>
                         <CardTitle className="font-heading text-xl md:text-2xl cursor-pointer hover:text-primary transition-colors"
-                          onClick={() => navigate(`/article/${article.articleSlug || article.id}`)}
+                          onClick={() => {
+                            const parts = article.seoPdfName?.replace('.pdf', '').split('-') || [];
+                            const titleSlug = parts.slice(5).join('-') || article.id;
+                            navigate(`/article/${titleSlug}`);
+                          }}
                         >
                           {article.manuscriptTitle || "Untitled Article"}
                         </CardTitle>

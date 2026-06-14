@@ -40,7 +40,7 @@ import {
 const BACKEND_URL = import.meta.env.VITE_API_URL;
 
 const ArticleDetail = () => {
-  const { slug, id } = useParams<{ slug: string; id: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [article, setArticle] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -51,21 +51,30 @@ const ArticleDetail = () => {
   // Fetch article details
   useEffect(() => {
     const fetchArticle = async () => {
-      if (!id) {
-        toast.error("Article ID not provided");
+      if (!slug) {
+        toast.error("Article not provided");
         navigate("/journal");
         return;
       }
 
       try {
         setLoading(true);
-        const res = await axios.get(`${BACKEND_URL}/submission/${id}`);
-        if (res.data.success && res.data.data) {
-          const articleData = res.data.data;
+        // Fetch all submissions and find by matching the title slug (skip first 5 parts)
+        const res = await axios.get(`${BACKEND_URL}/submission`);
+        const submissions = res.data.data || [];
+        const articleData = submissions.find(
+          (article: any) => {
+            const parts = article.seoPdfName?.replace('.pdf', '').split('-') || [];
+            const titleSlug = parts.slice(5).join('-');
+            return titleSlug === slug;
+          }
+        );
+
+        if (articleData) {
           setArticle(articleData);
 
           // Setup SEO metadata with DOI for Google indexing
-          const pageUrl = `${window.location.origin}/article/${id}`;
+          const pageUrl = `${window.location.origin}/article/${slug}`;
           setupArticlePageSEO(articleData, pageUrl);
         } else {
           toast.error("Article not found");
@@ -81,7 +90,7 @@ const ArticleDetail = () => {
     };
 
     fetchArticle();
-  }, [id, navigate]);
+  }, [slug, navigate]);
 
   const getPdfUrl = (article: any) => {
     // Primary: use volume/issue/seoPdfName format /:volume/:issue/:slug.pdf

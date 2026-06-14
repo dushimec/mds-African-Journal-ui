@@ -47,6 +47,31 @@ const ArticleDetail = () => {
   const [downloadingFile, setDownloadingFile] = useState<string | null>(null);
   const [copiedCitation, setCopiedCitation] = useState<string | null>(null);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const [views, setViews] = useState<number>(0);
+  const [downloads, setDownloads] = useState<number>(0);
+  const [viewTracked, setViewTracked] = useState<boolean>(false);
+
+  // Track article views
+  const trackView = async (articleId: string) => {
+    if (viewTracked) return;
+    
+    try {
+      await axios.patch(`${BACKEND_URL}/submission/${articleId}/track-view`, {});
+      setViewTracked(true);
+    } catch (error) {
+      console.error("Error tracking view:", error);
+    }
+  };
+
+  // Track article downloads
+  const trackDownload = async (articleId: string) => {
+    try {
+      await axios.patch(`${BACKEND_URL}/submission/${articleId}/track-download`, {});
+      setDownloads((prev) => prev + 1);
+    } catch (error) {
+      console.error("Error tracking download:", error);
+    }
+  };
 
   // Fetch article details
   useEffect(() => {
@@ -72,10 +97,15 @@ const ArticleDetail = () => {
 
         if (articleData) {
           setArticle(articleData);
+          setViews(articleData.views || 0);
+          setDownloads(articleData.downloads || 0);
 
           // Setup SEO metadata with DOI for Google indexing
           const pageUrl = `${window.location.origin}/article/${slug}`;
           setupArticlePageSEO(articleData, pageUrl);
+
+          // Track the view
+          trackView(articleData.id);
         } else {
           toast.error("Article not found");
           navigate("/journal");
@@ -138,6 +168,8 @@ const ArticleDetail = () => {
  const handleViewPdf = async (article: any) => {
      const pdfUrl = getPdfUrl(article);
      if (pdfUrl) {
+       // Track the download
+       await trackDownload(article.id);
        window.open(pdfUrl, '_blank');
      } else {
        toast.error('PDF not available for this article');
@@ -270,48 +302,82 @@ const ArticleDetail = () => {
               </div>
 
               {/* Authors with Links */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                  <User className="h-4 w-4" />
-                  <span className="font-medium">Authors</span>
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  {Array.isArray(article.authors) &&
-                  article.authors.length > 0 ? (
-                    article.authors.map((author: any, idx: number) => (
-                      <div key={idx} className="flex flex-col">
-                        <Button
-                          variant="link"
-                          className="p-0 h-auto font-medium text-primary hover:underline text-left"
-                          onClick={() =>
-                            navigate(
-                              `/author/${encodeURIComponent(author.fullName)}`,
-                            )
-                          }
-                        >
-                          {author.fullName}
-                        </Button>
-                        {author.affiliation && (
-                          <p className="text-sm text-muted-foreground">
-                            {author.affiliation}
-                          </p>
-                        )}
-                        {author.isCorresponding && (
-                          <Badge
-                            variant="secondary"
-                            className="w-fit text-xs mt-1"
-                          >
-                            Corresponding Author
-                          </Badge>
-                        )}
-                      </div>
-                    ))
+              <div className="space-y-4">
+                {/* Primary Author */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                    <User className="h-4 w-4" />
+                    <span className="font-medium">Primary Author</span>
+                  </div>
+                  {Array.isArray(article.authors) && article.authors.length > 0 ? (
+                    <div className="flex flex-col items-start">
+                      <Button
+                        variant="link"
+                        className="p-0 h-auto font-medium text-primary hover:underline text-left justify-start"
+                        onClick={() =>
+                          navigate(
+                            `/author/${encodeURIComponent(article.authors[0].fullName)}`,
+                          )
+                        }
+                      >
+                        {article.authors[0].fullName}
+                      </Button>
+                      {article.authors[0].affiliation && (
+                        <p className="text-sm text-muted-foreground">
+                          {article.authors[0].affiliation}
+                        </p>
+                      )}
+                    </div>
                   ) : (
                     <span className="text-muted-foreground">
                       Unknown Author
                     </span>
                   )}
                 </div>
+
+                {/* Co-Authors / Corresponding Authors */}
+                {Array.isArray(article.authors) && article.authors.length > 1 && (
+                  <div className="space-y-2 pt-2 border-t">
+                    <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                      <User className="h-4 w-4" />
+                      <span className="font-medium">
+                        {article.authors.slice(1).some((a: any) => a.isCorresponding)
+                          ? "Corresponding Authors"
+                          : "Co-Authors"}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      {article.authors.slice(1).map((author: any, idx: number) => (
+                        <div key={idx + 1} className="flex flex-col">
+                          <Button
+                            variant="link"
+                            className="p-0 h-auto font-medium text-primary hover:underline text-left"
+                            onClick={() =>
+                              navigate(
+                                `/author/${encodeURIComponent(author.fullName)}`,
+                              )
+                            }
+                          >
+                            {author.fullName}
+                          </Button>
+                          {author.affiliation && (
+                            <p className="text-sm text-muted-foreground">
+                              {author.affiliation}
+                            </p>
+                          )}
+                          {author.isCorresponding && (
+                            <Badge
+                              variant="secondary"
+                              className="w-fit text-xs mt-1 bg-blue-100 text-blue-800"
+                            >
+                              Corresponding Author
+                            </Badge>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Meta Information */}
@@ -325,11 +391,11 @@ const ArticleDetail = () => {
                 </div>
                 <div className="flex items-center">
                   <Eye className="mr-1 h-4 w-4" />
-                  Views: {article.views || 0}
+                  Views: {views}
                 </div>
                 <div className="flex items-center">
                   <Download className="mr-1 h-4 w-4" />
-                  Downloads: {article.downloads || 0}
+                  Downloads: {downloads}
                 </div>
               </div>
 

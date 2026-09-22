@@ -48,18 +48,18 @@ useEffect(() => {
 
  
   return (
-    <footer className="bg-primary text-primary-foreground">
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+    <footer className="bg-gradient-to-br from-primary via-primary to-blue-900 text-primary-foreground">
+      <div className="container mx-auto px-4 py-10 md:py-12">
+        <div className="grid grid-cols-2 gap-x-5 gap-y-8 md:grid-cols-4 md:gap-8">
           {/*  Logo and Description */}
-          <div className="col-span-1 md:col-span-2">
+          <div className="col-span-2 md:col-span-2">
             <div className="flex items-center space-x-2 mb-4">
               <BookOpen className="h-6 w-6" />
               <span className="font-heading font-bold text-xl">
                 MDS African Journal
               </span>
             </div>
-            <p className="text-primary-foreground/80 mb-4 max-w-md">
+            <p className="text-primary-foreground/80 mb-4 max-w-md text-sm md:text-base">
               Advancing scientific knowledge through peer-reviewed research and
               scholarly communication. Our journal publishes high-quality
               research across multiple disciplines.
@@ -111,8 +111,8 @@ useEffect(() => {
 
           {/*  Quick Links */}
           <div>
-            <h3 className="font-semibold mb-4">Quick Links</h3>
-            <ul className="space-y-2">
+            <h3 className="font-semibold mb-3 md:mb-4">Quick Links</h3>
+            <ul className="space-y-2 text-sm md:text-base">
                <li>
                 <Link
                   to="/"
@@ -178,13 +178,21 @@ useEffect(() => {
                   Contact
                 </Link>
               </li>
+              <li>
+                <Link
+                  to="/privacy-policy"
+                  className="text-primary-foreground/80 hover:text-primary-foreground transition-fast"
+                >
+                  Privacy Policy
+                </Link>
+              </li>
             </ul>
           </div>
 
           {/*  Contact Info */}
           <div>
-            <h3 className="font-semibold mb-4">Contact</h3>
-            <ul className="space-y-2">
+            <h3 className="font-semibold mb-3 md:mb-4">Contact</h3>
+            <ul className="space-y-3 text-sm md:text-base">
               <li className="flex items-center space-x-2 text-primary-foreground/80">
                 <Mail className="h-4 w-4" />
                 <span>{contactInfo.email || "info@majaed.org"}</span>

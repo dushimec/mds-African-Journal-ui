@@ -16,14 +16,31 @@ interface ScrollAnimationWrapperProps {
   delay?: number;
   rootMargin?: string;
   className?: string;
+  disabled?: boolean;
+  /** Accessibility: Add role and aria-label if needed */
+  role?: string;
+  ariaLabel?: string;
 }
 
 /**
- * Wrapper component that applies scroll animations to its children
+ * Wrapper component that applies scroll-triggered animations to its children
+ * 
+ * Features:
+ * - Scroll-triggered reveal animations
+ * - Accessibility-first: respects prefers-reduced-motion
+ * - Performance optimized with Intersection Observer
+ * - 60fps smooth animations
+ * 
  * Usage:
- * <ScrollAnimationWrapper animationType="slide-in-up">
+ * ```tsx
+ * <ScrollAnimationWrapper 
+ *   animationType="slide-in-up"
+ *   delay={200}
+ *   threshold={0.2}
+ * >
  *   <YourComponent />
  * </ScrollAnimationWrapper>
+ * ```
  */
 export const ScrollAnimationWrapper = ({
   children,
@@ -32,18 +49,25 @@ export const ScrollAnimationWrapper = ({
   delay = 0,
   rootMargin = '0px',
   className = '',
+  disabled = false,
+  role,
+  ariaLabel,
 }: ScrollAnimationWrapperProps) => {
-  const { ref, animationClass } = useScrollAnimation({
+  const { ref, animationClass, prefersReducedMotion } = useScrollAnimation({
     threshold,
     rootMargin,
     animationType,
     delay,
+    disabled,
   });
 
   return (
     <div
       ref={ref}
       className={`${animationClass} ${className}`}
+      role={role}
+      aria-label={ariaLabel}
+      {...(prefersReducedMotion && { 'data-prefers-reduced-motion': true })}
     >
       {children}
     </div>

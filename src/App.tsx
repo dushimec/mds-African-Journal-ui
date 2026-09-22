@@ -11,6 +11,7 @@ import AuthorPage from "./pages/AuthorPage";
 import Archive from "./pages/Archive";
 import Submission from "./pages/Submission";
 import Contact from "./pages/Contact";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
 import { useState } from "react";
 import { useEffect } from "react";
@@ -55,6 +56,8 @@ import ArticleDetail from "./pages/ArticleDetail";
 // New admin login page
 import AdminLogin from "./pages/admin/AdminLogin"; // ✅ Create this for admin auth
 import LogoManager from "./pages/admin/LogoManager";
+import { FaWhatsapp } from "react-icons/fa6";
+import CookieConsent from "./components/CookieConsent";
 
 const App = () => {
   const location = useLocation();
@@ -131,6 +134,7 @@ const App = () => {
           <Route path="/archive" element={<Archive />} />
           <Route path="/submission" element={<Submission />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/search" element={<SearchResults />} />
 
 
@@ -145,6 +149,20 @@ const App = () => {
         </Routes>
       </main>
       {!hideLayout && <Footer />}
+
+      {!hideLayout && <CookieConsent />}
+
+      {!hideLayout && (
+        <a
+          href="https://wa.me/250788255277"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="whatsapp-button"
+          aria-label="Chat with us on WhatsApp"
+        >
+          <FaWhatsapp className="whatsapp-icon" aria-hidden="true" />
+        </a>
+      )}
 
       {/* ✅ Toast Notifications */}
       <ToastContainer

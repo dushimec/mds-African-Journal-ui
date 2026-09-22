@@ -146,13 +146,13 @@ const Navigation = () => {
       </div>
 
       {/* Middle Bar - Logo and Search */}
-      <div className="container mx-auto px-2 xs:px-4 py-2 xs:py-3 border-b border-border">
+      <div className="container mx-auto px-2 xs:px-4 py-3 xs:py-4 border-b border-border bg-white/70">
         <div className="flex items-center justify-between gap-2 xs:gap-3">
-          <Link to="/" className="flex items-center gap-1 xs:gap-2 font-bold text-primary flex-shrink-0">
+          <Link to="/" className="flex items-center gap-2 xs:gap-3 font-bold text-primary flex-shrink-0 animate-fade-in">
             <div className="h-12 xs:h-16 sm:h-24 w-12 xs:w-16 sm:w-24">
               <img src={logoUrl} alt="Logo" className="rounded-full object-cover w-full h-full" />
             </div>
-            <span className="font-heading text-xs xs:text-sm sm:text-base line-clamp-2 max-w-xs xs:max-w-sm">
+            <span className="font-heading text-sm xs:text-base sm:text-xl leading-tight line-clamp-2 max-w-xs xs:max-w-sm">
               {journalTitle}
             </span>
           </Link>
@@ -187,7 +187,7 @@ const Navigation = () => {
       </div>
 
       {/* Bottom Nav */}
-      <div className="bg-background">
+      <div className="bg-white/80">
         <div className="container mx-auto px-2 xs:px-4">
           <div className="flex items-center justify-between h-12">
             {/* Desktop Navigation */}

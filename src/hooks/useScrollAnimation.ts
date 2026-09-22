@@ -13,7 +13,32 @@ interface UseScrollAnimationOptions {
   rootMargin?: string;
   animationType?: AnimationType;
   delay?: number;
+  disabled?: boolean;
 }
+
+/**
+ * Detects if user prefers reduced motion
+ * Respects accessibility standards for motion-sensitive users
+ */
+const useReducedMotion = (): boolean => {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  useEffect(() => {
+    // Check initial preference
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReducedMotion(mediaQuery.matches);
+
+    // Listen for changes
+    const handleChange = (e: MediaQueryListEvent) => {
+      setPrefersReducedMotion(e.matches);
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
+  return prefersReducedMotion;
+};
 
 /**
  * Custom hook for scroll-triggered animations
@@ -28,20 +53,29 @@ export const useScrollAnimation = (
     rootMargin = '0px',
     animationType = 'fade-in',
     delay = 0,
+    disabled = false,
   } = options;
 
   const ref = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
+    // Respect reduced motion preference
+    if (disabled || prefersReducedMotion) {
+      setIsVisible(true);
+      return;
+    }
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          // Add delay if specified
-          if (delay > 0) {
-            setTimeout(() => {
+          // Add delay if specified, but respect prefers-reduced-motion
+          if (delay > 0 && !prefersReducedMotion) {
+            const timeoutId = setTimeout(() => {
               setIsVisible(true);
             }, delay);
+            return () => clearTimeout(timeoutId);
           } else {
             setIsVisible(true);
           }
@@ -64,9 +98,12 @@ export const useScrollAnimation = (
         observer.unobserve(ref.current);
       }
     };
-  }, [threshold, rootMargin, delay]);
+  }, [threshold, rootMargin, delay, disabled, prefersReducedMotion]);
 
   const getAnimationClass = () => {
+    if (prefersReducedMotion || disabled) {
+      return '';
+    }
     const baseClass = `scroll-${animationType}`;
     const visibleClass = `scroll-${animationType}-visible`;
     return isVisible ? visibleClass : baseClass;
@@ -74,16 +111,17 @@ export const useScrollAnimation = (
 
   return {
     ref,
-    isVisible,
+    isVisible: isVisible || prefersReducedMotion || disabled,
     animationClass: getAnimationClass(),
+    prefersReducedMotion,
   };
 };
 
 /**
- * Hook for multiple scroll animations in a list
+ * Hook for multiple scroll animations in a list with staggered timing
  * @param length - Number of items to animate
  * @param options - Configuration options
- * @returns Function to get animation class for each item
+ * @returns Object with methods to register refs and get animation classes
  */
 export const useScrollAnimationList = (
   length: number,
@@ -94,14 +132,22 @@ export const useScrollAnimationList = (
     rootMargin = '0px',
     animationType = 'fade-in',
     delay = 100,
+    disabled = false,
   } = options;
 
   const refs = useRef<HTMLDivElement[]>([]);
   const [visibleItems, setVisibleItems] = useState<boolean[]>(
     new Array(length).fill(false)
   );
+  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
+    // Respect reduced motion preference
+    if (disabled || prefersReducedMotion) {
+      setVisibleItems(new Array(length).fill(true));
+      return;
+    }
+
     const observers: IntersectionObserver[] = [];
 
     refs.current.forEach((el, index) => {
@@ -110,14 +156,16 @@ export const useScrollAnimationList = (
       const observer = new IntersectionObserver(
         ([entry]) => {
           if (entry.isIntersecting) {
-            setTimeout(() => {
+            const staggerDelay = delay * index;
+            const timeoutId = setTimeout(() => {
               setVisibleItems((prev) => {
                 const updated = [...prev];
                 updated[index] = true;
                 return updated;
               });
-            }, delay * index);
+            }, staggerDelay);
             observer.unobserve(el);
+            return () => clearTimeout(timeoutId);
           }
         },
         {
@@ -133,9 +181,12 @@ export const useScrollAnimationList = (
     return () => {
       observers.forEach((obs) => obs.disconnect());
     };
-  }, [length, threshold, rootMargin, delay]);
+  }, [length, threshold, rootMargin, delay, disabled, prefersReducedMotion]);
 
   const getAnimationClass = (index: number) => {
+    if (prefersReducedMotion || disabled) {
+      return '';
+    }
     const baseClass = `scroll-${animationType}`;
     const visibleClass = `scroll-${animationType}-visible`;
     return visibleItems[index] ? visibleClass : baseClass;
@@ -151,6 +202,7 @@ export const useScrollAnimationList = (
     registerRef,
     getAnimationClass,
     visibleItems,
+    prefersReducedMotion,
   };
 };
 

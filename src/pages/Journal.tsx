@@ -23,6 +23,9 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { validateIssuesPerVolume } from "@/lib/issueValidation";
+import { ScrollAnimationWrapper } from "@/components/ScrollAnimationWrapper";
+import { useStaggeredAnimation } from "@/hooks/useStaggeredAnimation";
+import { useParallax } from "@/hooks/useParallax";
 
 // ✅ Base URL from Vite environment variable
 const BACKEND_URL = import.meta.env.VITE_API_URL;
@@ -50,6 +53,9 @@ const Journal = () => {
   const [loading, setLoading] = useState(true);
   const [currentIssue, setCurrentIssue] = useState<any>(null);
   const [issues, setIssues] = useState<any[]>([]);
+
+  // Parallax effect for hero section
+  const { ref: heroRef, style: heroStyle } = useParallax({ speed: 0.4 });
 
   // ✅ Fetch articles
   useEffect(() => {
@@ -140,6 +146,15 @@ const Journal = () => {
     return matchesSearch && matchesCategory;
   });
 
+  // Staggered animations for article cards
+  const { getStaggerStyle, registerRef } = useStaggeredAnimation(
+    filteredArticles.length,
+    {
+      itemDelay: 60,
+      containerDelay: 0,
+    }
+  );
+
   const toggleExpand = (id) => {
     setExpandedId(expandedId === id ? null : id);
   };
@@ -150,70 +165,127 @@ const Journal = () => {
       <div className="container mx-auto px-4">
         {/* Current Issue Section */}
         {currentIssue && (
-          <section className="mb-16">
-            <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-8 border border-primary/20">
+          <ScrollAnimationWrapper 
+            animationType="fade-in" 
+            threshold={0.2}
+            className="mb-16"
+          >
+            <div 
+              ref={heroRef}
+              style={heroStyle}
+              className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-8 border border-primary/20 hover-glow transition-all duration-500"
+            >
               <div className="text-center mb-8">
-                <Badge variant="secondary" className="mb-4">
-                  Latest Issue
-                </Badge>
-                <h2 className="text-3xl md:text-4xl font-bold font-heading mb-4">
-                  Volume {currentIssue.volume}, Issue {currentIssue.issue}
-                </h2>
-                <p className="text-lg text-muted-foreground mb-6">
-                  Published: {new Date(currentIssue.createdAt).toLocaleDateString()}
-                </p>
+                <ScrollAnimationWrapper
+                  animationType="scale-in"
+                  delay={100}
+                  threshold={0.3}
+                  className="inline-block"
+                >
+                  <Badge variant="secondary" className="mb-4 animate-badge-entrance">
+                    Latest Issue
+                  </Badge>
+                </ScrollAnimationWrapper>
+
+                <ScrollAnimationWrapper
+                  animationType="slide-in-down"
+                  delay={150}
+                  threshold={0.3}
+                >
+                  <h2 className="text-3xl md:text-4xl font-bold font-heading mb-4">
+                    Volume {currentIssue.volume}, Issue {currentIssue.issue}
+                  </h2>
+                </ScrollAnimationWrapper>
+
+                <ScrollAnimationWrapper
+                  animationType="slide-in-up"
+                  delay={200}
+                  threshold={0.3}
+                >
+                  <p className="text-lg text-muted-foreground mb-6">
+                    Published: {new Date(currentIssue.createdAt).toLocaleDateString()}
+                  </p>
+                </ScrollAnimationWrapper>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div className="space-y-2">
-                  <h3 className="font-semibold text-sm text-muted-foreground">
-                    Publication Year
-                  </h3>
-                  <p className="text-2xl font-bold">{currentIssue.year}</p>
-                </div>
-                <div className="space-y-2">
-                  <h3 className="font-semibold text-sm text-muted-foreground">
-                    Articles in This Issue
-                  </h3>
-                  <p className="text-2xl font-bold">
-                    {articles.filter(
-                      (a) =>
-                        a.volume === currentIssue.volume &&
-                        a.issue === currentIssue.issue
-                    ).length}
-                  </p>
-                </div>
+                <ScrollAnimationWrapper
+                  animationType="slide-in-left"
+                  delay={200}
+                  threshold={0.3}
+                >
+                  <div className="space-y-2">
+                    <h3 className="font-semibold text-sm text-muted-foreground">
+                      Publication Year
+                    </h3>
+                    <p className="text-2xl font-bold">{currentIssue.year}</p>
+                  </div>
+                </ScrollAnimationWrapper>
+
+                <ScrollAnimationWrapper
+                  animationType="slide-in-right"
+                  delay={250}
+                  threshold={0.3}
+                >
+                  <div className="space-y-2">
+                    <h3 className="font-semibold text-sm text-muted-foreground">
+                      Articles in This Issue
+                    </h3>
+                    <p className="text-2xl font-bold">
+                      {articles.filter(
+                        (a) =>
+                          a.volume === currentIssue.volume &&
+                          a.issue === currentIssue.issue
+                      ).length}
+                    </p>
+                  </div>
+                </ScrollAnimationWrapper>
               </div>
 
               <div className="text-center">
-                <Button
-                  size="lg"
-                  onClick={() =>
-                    navigate(
-                      `/issue/${currentIssue.volume}/${currentIssue.issue}`
-                    )
-                  }
-                  className="gap-2"
+                <ScrollAnimationWrapper
+                  animationType="scale-in"
+                  delay={300}
+                  threshold={0.3}
                 >
-                  View This Issue
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
+                  <Button
+                    size="lg"
+                    onClick={() =>
+                      navigate(
+                        `/issue/${currentIssue.volume}/${currentIssue.issue}`
+                      )
+                    }
+                    className="gap-2 hover-lift"
+                  >
+                    View This Issue
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </ScrollAnimationWrapper>
               </div>
             </div>
-          </section>
+          </ScrollAnimationWrapper>
         )}
 
-        <div className="text-center mb-12">
+        <ScrollAnimationWrapper
+          animationType="slide-in-up"
+          threshold={0.2}
+          className="text-center mb-12"
+        >
           <h1 className="text-4xl md:text-3xl font-bold font-heading mb-6">
             Published Articles
           </h1>
           <p className="text-muted-foreground">
             Browse all published articles from our journal
           </p>
-        </div>
+        </ScrollAnimationWrapper>
 
         {/* Search and Filter */}
-        <div className="mb-8">
+        <ScrollAnimationWrapper
+          animationType="fade-in"
+          delay={100}
+          threshold={0.2}
+          className="mb-8"
+        >
           <div className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -221,7 +293,7 @@ const Journal = () => {
                 placeholder="Search articles, authors, or keywords..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 transition-all duration-300 focus:ring-2"
               />
             </div>
             <div className="flex gap-2">
@@ -229,7 +301,7 @@ const Journal = () => {
                 value={selectedCategory}
                 onValueChange={setSelectedCategory}
               >
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-48 transition-all duration-300">
                   <Filter className="mr-2 h-4 w-4" />
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
@@ -244,153 +316,103 @@ const Journal = () => {
               </Select>
             </div>
           </div>
-        </div>
+        </ScrollAnimationWrapper>
 
         {/* Content and Loader */}
         {loading ? (
           <div className="space-y-8">
             {Array.from({ length: 5 }).map((_, i) => (
-              <Card
+              <ScrollAnimationWrapper
                 key={i}
-                className="animate-pulse shadow-md h-full flex flex-col justify-between"
+                animationType="fade-in"
+                delay={i * 50}
               >
-                <CardHeader>
-                  <div className="h-4 w-24 bg-gray-300 rounded mb-2"></div>
-                  <div className="h-6 w-3/4 bg-gray-300 rounded mb-3"></div>
-                  <div className="h-4 w-1/2 bg-gray-300 rounded"></div>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-4 w-full bg-gray-300 rounded mb-3"></div>
-                  <div className="h-4 w-5/6 bg-gray-300 rounded mb-3"></div>
-                  <div className="h-4 w-4/5 bg-gray-300 rounded"></div>
-                  <div className="flex gap-2 mt-4">
-                    <div className="h-8 w-24 bg-gray-300 rounded"></div>
-                    <div className="h-8 w-28 bg-gray-300 rounded"></div>
-                  </div>
-                </CardContent>
-              </Card>
+                <Card
+                  className="animate-pulse shadow-md h-full flex flex-col justify-between"
+                >
+                  <CardHeader>
+                    <div className="h-4 w-24 bg-gray-300 rounded mb-2"></div>
+                    <div className="h-6 w-3/4 bg-gray-300 rounded mb-3"></div>
+                    <div className="h-4 w-1/2 bg-gray-300 rounded"></div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-4 w-full bg-gray-300 rounded mb-3"></div>
+                    <div className="h-4 w-5/6 bg-gray-300 rounded mb-3"></div>
+                    <div className="h-4 w-4/5 bg-gray-300 rounded"></div>
+                    <div className="flex gap-2 mt-4">
+                      <div className="h-8 w-24 bg-gray-300 rounded"></div>
+                      <div className="h-8 w-28 bg-gray-300 rounded"></div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </ScrollAnimationWrapper>
             ))}
           </div>
         ) : (
           <div className="space-y-8">
-            {filteredArticles.map((article) => (
-              <Card
+            {filteredArticles.map((article, index) => (
+              <div
                 key={article.id}
-                className="shadow-medium hover:shadow-strong transition-smooth"
+                ref={registerRef(index)}
+                style={getStaggerStyle(index)}
               >
-                <CardHeader>
-                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge variant="secondary">
-                          {article.category || "General"}
-                        </Badge>
-                        <div className="flex items-center text-sm text-muted-foreground">
-                          <Calendar className="mr-1 h-3 w-3" />
-                          {new Date(article.createdAt).toDateString()}
+                <Card
+                  className="shadow-medium hover:shadow-strong transition-all duration-300 hover-lift"
+                >
+                  <CardHeader>
+                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge variant="secondary" className="animate-badge-entrance">
+                            {article.category || "General"}
+                          </Badge>
+                          <div className="flex items-center text-sm text-muted-foreground">
+                            <Calendar className="mr-1 h-3 w-3" />
+                            {new Date(article.createdAt).toDateString()}
+                          </div>
                         </div>
-                      </div>
-                      <CardTitle className="font-heading text-xl md:text-2xl mb-2 cursor-pointer hover:text-primary transition-colors"
-                        onClick={() => {
-                          const parts = article.seoPdfName?.replace('.pdf', '').split('-') || [];
-                          const titleSlug = parts.slice(5).join('-') || article.id;
-                          navigate(`/article/${titleSlug}`);
-                        }}
-                      >
-                        {article.manuscriptTitle || "Untitled Article"}
-                      </CardTitle>
-                      {/* <div className="flex items-center text-muted-foreground mb-2">
-                        <User className="mr-1 h-4 w-4" />
-                        <span className="text-sm">
-                          {Array.isArray(article.authors)
-                            ? article.authors.map((a) => a.fullName).join(", ")
-                            : "Unknown Author"}
-                        </span>
-                      </div> */}
-                    </div>
-
-                    <div className="flex flex-col gap-2 md:items-end">
-                      <div className="flex gap-4 text-sm text-muted-foreground">
-                        <div className="flex items-center">
-                          <Eye className="mr-1 h-3 w-3" />
-                          {article.views || 0}
-                        </div>
-                        <div className="flex items-center">
-                          <Download className="mr-1 h-3 w-3" />
-                          {article.downloads || 0}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardHeader>
-
-                {/* <CardContent>
-                  <p className="text-muted-foreground mb-4 leading-relaxed">
-                    {expandedId === article.id
-                      ? article.abstract
-                      : `${article.abstract?.slice(0, 150) || ""}...`}
-                  </p>
-
-                  {expandedId === article.id && (
-                    <div className="mt-2 space-y-2">
-                      <p>
-                        <strong>Keywords:</strong> {article.keywords.split(',').slice(0,5).join(',')}
-                      </p>
-                      <p>
-                        <strong>Created At:</strong>{" "}
-                        {new Date(article.createdAt).toLocaleDateString()}
-                      </p>
-                      {article.issue && (
-                        <p>
-                          <strong>Issue:</strong> {article.issue.title}
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  <div className="flex flex-wrap gap-2 mt-4">
-                    {article.keywords &&
-                      article.keywords.split(",").slice(0,5).map((keyword, index) => (
-                        <Badge
-                          key={index}
-                          variant="outline"
-                          className="text-xs"
+                        <CardTitle 
+                          className="font-heading text-xl md:text-2xl mb-2 cursor-pointer hover:text-primary transition-colors duration-300"
+                          onClick={() => {
+                            const parts = article.seoPdfName?.replace('.pdf', '').split('-') || [];
+                            const titleSlug = parts.slice(5).join('-') || article.id;
+                            navigate(`/article/${titleSlug}`);
+                          }}
                         >
-                          {keyword.trim()}
-                        </Badge>
-                      ))}
-                  </div>
+                          {article.manuscriptTitle || "Untitled Article"}
+                        </CardTitle>
+                      </div>
 
-                  <div className="flex flex-col sm:flex-row gap-3 mt-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => toggleExpand(article.id)}
-                    >
-                      <Eye className="mr-2 h-4 w-4" />
-                      {expandedId === article.id ? "Hide Details" : "Read More"}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleViewPdf(article)}
-                    >
-                      <Eye className="mr-2 h-4 w-4" />
-                      View Document
-                    </Button>
-                  </div>
-                </CardContent> */}
-              </Card>
+                      <div className="flex flex-col gap-2 md:items-end">
+                        <div className="flex gap-4 text-sm text-muted-foreground">
+                          <div className="flex items-center hover:text-primary transition-colors duration-300">
+                            <Eye className="mr-1 h-3 w-3" />
+                            {article.views || 0}
+                          </div>
+                          <div className="flex items-center hover:text-primary transition-colors duration-300">
+                            <Download className="mr-1 h-3 w-3" />
+                            {article.downloads || 0}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </Card>
+              </div>
             ))}
           </div>
         )}
 
         {!loading && filteredArticles.length === 0 && (
-          <div className="text-center py-12">
+          <ScrollAnimationWrapper
+            animationType="fade-in"
+            threshold={0.3}
+            className="text-center py-12"
+          >
             <p className="text-muted-foreground text-lg">
               No articles found matching your search criteria.
             </p>
-          </div>
+          </ScrollAnimationWrapper>
         )}
       </div>
     </div>

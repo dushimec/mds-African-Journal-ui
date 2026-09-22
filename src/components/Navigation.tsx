@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type CSSProperties } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +40,22 @@ const Navigation = () => {
     if (isMenuOpen) {
       setIsNavVisible(true);
     }
+  }, [isMenuOpen]);
+
+  useEffect(() => {
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", closeOnEscape);
+    document.body.style.overflow = isMenuOpen ? "hidden" : "";
+
+    return () => {
+      document.removeEventListener("keydown", closeOnEscape);
+      document.body.style.overflow = "";
+    };
   }, [isMenuOpen]);
 
   const navItems = [
@@ -223,23 +239,36 @@ const Navigation = () => {
             </Button>
           </div>
 
-          {/* Mobile Menu - Animated */}
-          {isMenuOpen && (
-            <div className="lg:hidden py-3 xs:py-4 border-t border-border animate-slide-in-down">
-              <div className="flex flex-col gap-1">
+          {/* Mobile Menu - Right-to-left drawer */}
+          <div className={`mobile-menu-backdrop lg:hidden ${isMenuOpen ? "mobile-menu-backdrop-open" : ""}`} onClick={() => setIsMenuOpen(false)} />
+          <div className={`mobile-menu-drawer lg:hidden ${isMenuOpen ? "mobile-menu-drawer-open" : ""}`} aria-hidden={!isMenuOpen}>
+            <div className="flex items-center justify-between border-b border-border pb-4">
+              <span className="font-heading text-2xl text-primary">Menu</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 rounded-full"
+                onClick={() => setIsMenuOpen(false)}
+                aria-label="Close menu"
+                tabIndex={isMenuOpen ? 0 : -1}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+
+            <div className="flex flex-col gap-1 pt-5">
                 {navItems.map((item, index) => (
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`px-3 py-2 rounded-md text-sm font-medium transition-smooth ${
+                    tabIndex={isMenuOpen ? 0 : -1}
+                    className={`mobile-menu-link px-3 py-3 rounded-md text-base font-medium transition-smooth ${
                       isActive(item.path)
                         ? "bg-primary text-primary-foreground"
                         : "text-foreground hover:bg-secondary hover:text-secondary-foreground"
                     }`}
                     onClick={() => setIsMenuOpen(false)}
-                    style={{
-                      animation: `slide-in-down 0.3s ease-out ${index * 0.05}s both`,
-                    }}
+                    style={{ "--menu-delay": `${index * 45}ms` } as CSSProperties}
                   >
                     {item.name}
                   </Link>
@@ -257,12 +286,14 @@ const Navigation = () => {
                         navigate("/search");
                       }}
                       className="pl-8 w-full text-sm"
+                      tabIndex={isMenuOpen ? 0 : -1}
                     />
                   </div>
                   {isLoggedIn ? (
                     <Button
                       className="w-full text-sm"
                       variant="destructive"
+                      tabIndex={isMenuOpen ? 0 : -1}
                       onClick={() => {
                         handleLogout();
                         setIsMenuOpen(false);
@@ -272,13 +303,12 @@ const Navigation = () => {
                     </Button>
                   ) : (
                     <Link to="/login" onClick={() => setIsMenuOpen(false)} className="block">
-                      <Button className="w-full text-sm">Login</Button>
+                      <Button className="w-full text-sm" tabIndex={isMenuOpen ? 0 : -1}>Login</Button>
                     </Link>
                   )}
                 </div>
               </div>
-            </div>
-          )}
+          </div>
         </div>
       </div>
     </nav>

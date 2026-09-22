@@ -435,6 +435,7 @@ All colors MUST be HSL for proper theming.
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
@@ -446,6 +447,7 @@ body {
   font-size: 17px;
   line-height: 1.65;
   letter-spacing: 0;
+  overflow-x: hidden;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -539,6 +541,8 @@ a.bg-primary:hover {
   display: flex;
   flex-direction: column;
   width: min(88vw, 25rem);
+  max-width: 100%;
+  box-sizing: border-box;
   height: 100dvh;
   padding: 1.25rem;
   overflow-y: auto;
@@ -573,6 +577,8 @@ a.bg-primary:hover {
   right: 0;
   bottom: 0;
   left: 0;
+  width: 100%;
+  box-sizing: border-box;
   z-index: 70;
   border-top: 1px solid hsl(var(--primary-foreground) / 0.16);
   background: hsl(var(--primary) / 0.98);
@@ -586,6 +592,7 @@ a.bg-primary:hover {
   align-items: center;
   gap: 0.9rem;
   width: min(100%, 82rem);
+  box-sizing: border-box;
   min-height: 4.5rem;
   margin: 0 auto;
   padding: 0.8rem 1.25rem;
@@ -662,21 +669,29 @@ a.bg-primary:hover {
 
 @media (max-width: 640px) {
   .cookie-consent-content {
-    align-items: flex-start;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
     gap: 0.55rem 0.7rem;
     padding: 0.75rem 1rem;
   }
 
   .cookie-consent-message {
-    flex: 1 1 calc(100% - 2.1rem);
+    min-width: 0;
     font-size: 0.9rem;
   }
 
   .cookie-consent-actions {
+    grid-column: 1 / -1;
     width: 100%;
-    justify-content: flex-end;
-    padding-left: 2.05rem;
+    padding-left: 0;
+  }
+
+  .cookie-consent-decline,
+  .cookie-consent-accept {
+    flex: 1 1 0;
+    min-width: 0;
+    white-space: nowrap;
   }
 }
 
